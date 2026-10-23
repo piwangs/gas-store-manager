@@ -433,7 +433,7 @@ async function handleLogin(e) {
   $("displayUserName").textContent = `${currentUser.name} (${currentUser.role})`;
 
   if (currentUser.role === "Manager") {
-    activeLocation = "Bentiu Main Camp";
+    activeLocation = "Juba Depot";
     $("managerLocationBox").classList.remove("hidden");
     $("managerLocationBox").classList.add("flex");
     $("manageUsersBtn").classList.remove("hidden");
