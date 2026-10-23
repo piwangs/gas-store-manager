@@ -1,0 +1,1046 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GAS GENERAL STORE MANAGER - Complete Store & Financial System</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    tailwind.config = { 
+      theme: { 
+        extend: { 
+          colors: { 
+            brand: {
+              50:'#eff6ff', 100:'#dbeafe', 500:'#3b82f6', 600:'#2563eb', 700:'#1d4ed8', 900:'#1e3a8a'
+            }
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    @media print {
+      #loginModal, header button, #managerLocationBox, #filtersPanel,
+      #itemModal, #userManagerModal, #auditModal, #reorderModal, .no-print { display:none !important; }
+      body { background:white !important; }
+      main { max-width:none !important; padding:0 !important; }
+      .shadow-sm { box-shadow:none !important; }
+    }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-800 font-sans min-h-screen flex flex-col">
+
+  <!-- Login Modal -->
+  <div id="loginModal" class="fixed inset-0 bg-slate-900/90 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 space-y-4">
+      <div class="text-center">
+        <div class="inline-block bg-brand-600 text-white p-3.5 rounded-2xl mb-2 shadow-md">
+          <i class="fa-solid fa-lock text-2xl"></i>
+        </div>
+        <h2 class="text-xl font-bold text-slate-800">GAS GENERAL STORE MANAGER</h2>
+        <p class="text-xs text-slate-500 mt-1">Multi-Location Daily Inventory & Financial System</p>
+      </div>
+
+      <div class="bg-amber-50 border border-amber-200 p-3 rounded-xl text-xs text-amber-900">
+        <b>First-run demo credentials:</b><br>
+        &bull; <b>Manager:</b> <code>admin</code> / <code>admin2026</code><br>
+        &bull; <b>Storekeeper:</b> <code>store_bentiu</code> / <code>bentiu2026</code>
+      </div>
+
+      <form id="loginForm" class="space-y-3">
+        <div>
+          <label for="loginUser" class="block text-xs font-semibold uppercase mb-1 text-slate-600">Username</label>
+          <input id="loginUser" required autocomplete="username" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none" placeholder="Enter username">
+        </div>
+        <div>
+          <label for="loginPass" class="block text-xs font-semibold uppercase mb-1 text-slate-600">Password</label>
+          <input id="loginPass" type="password" required autocomplete="current-password" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none" placeholder="Enter password">
+        </div>
+        <div id="loginError" class="hidden text-xs text-rose-600 font-semibold text-center">Invalid username or password.</div>
+        <button type="submit" class="w-full bg-brand-600 hover:bg-brand-700 text-white font-bold py-2.5 rounded-lg text-sm shadow-md transition">Sign In to Store Manager</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Header Navigation -->
+  <header class="bg-slate-900 text-white shadow-lg sticky top-0 z-40">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex flex-col sm:flex-row justify-between items-center gap-4">
+      <div class="flex items-center gap-3">
+        <div class="bg-brand-600 p-2.5 rounded-xl shadow-md"><i class="fa-solid fa-boxes-stacked text-xl"></i></div>
+        <div>
+          <h1 class="text-xl font-bold tracking-tight">GAS GENERAL STORE MANAGER <span id="locationBadge" class="text-xs bg-brand-700 px-2.5 py-0.5 rounded-full ml-2">Signed out</span></h1>
+          <p class="text-xs text-slate-400">Multi-Location Daily Inventory & Revenue Tracker</p>
+        </div>
+      </div>
+      <div class="flex flex-wrap items-center justify-end gap-2 w-full sm:w-auto">
+        <div class="flex items-center bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 gap-2 text-xs">
+          <i class="fa-solid fa-user-check text-blue-400"></i>
+          <span id="displayUserName" class="font-semibold text-white">Signed out</span>
+          <button id="logoutBtn" type="button" class="text-slate-400 hover:text-rose-400 ml-1 transition" title="Logout"><i class="fa-solid fa-right-from-bracket"></i></button>
+        </div>
+        <button id="reorderBtn" type="button" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-2 rounded-lg text-xs font-semibold border border-slate-700 transition"><i class="fa-solid fa-cart-flatbed text-amber-400 mr-1"></i>Reorder List</button>
+        <button id="auditBtn" type="button" class="hidden bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-2 rounded-lg text-xs font-semibold border border-slate-700 transition"><i class="fa-solid fa-clock-rotate-left text-brand-400 mr-1"></i>Audit Log</button>
+        <button id="manageUsersBtn" type="button" class="hidden bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-lg text-xs font-semibold shadow-md transition"><i class="fa-solid fa-users-gear mr-1"></i>Stores & Accounts</button>
+        <button id="exportBtn" type="button" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-2 rounded-lg text-xs border border-slate-700 transition"><i class="fa-solid fa-file-csv text-emerald-400 mr-1"></i>Export CSV</button>
+        <button id="printBtn" type="button" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-2 rounded-lg text-xs border border-slate-700 transition"><i class="fa-solid fa-print text-amber-400 mr-1"></i>Print</button>
+        <button id="newItemBtn" type="button" class="hidden bg-brand-600 hover:bg-brand-700 text-white px-3.5 py-2 rounded-lg text-xs font-semibold shadow-md transition"><i class="fa-solid fa-plus mr-1"></i>New Item</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="flex-grow max-w-7xl w-full mx-auto px-4 py-6 space-y-6">
+    <!-- Date and Location Selector Bar -->
+    <section class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col md:flex-row justify-between items-center gap-4">
+      <div class="flex items-center gap-2 flex-wrap">
+        <button id="prevDateBtn" class="bg-slate-100 hover:bg-slate-200 px-3 py-2 rounded-lg text-sm font-semibold transition"><i class="fa-solid fa-chevron-left"></i></button>
+        <div class="flex items-center gap-2"><i class="fa-solid fa-calendar-day text-brand-600"></i><input type="date" id="selectedDate" class="bg-slate-50 border border-slate-300 rounded-lg text-sm font-bold p-2 focus:ring-brand-500"></div>
+        <button id="nextDateBtn" class="bg-slate-100 hover:bg-slate-200 px-3 py-2 rounded-lg text-sm font-semibold transition"><i class="fa-solid fa-chevron-right"></i></button>
+        <button id="todayBtn" class="bg-brand-50 hover:bg-brand-100 text-brand-700 px-3 py-2 rounded-lg text-xs font-bold transition">Today</button>
+      </div>
+      <div id="managerLocationBox" class="hidden items-center gap-2">
+        <label for="locationSelector" class="text-xs font-semibold text-slate-500">Location:</label>
+        <select id="locationSelector" class="bg-slate-50 border border-slate-300 rounded-lg text-xs p-2 font-semibold text-slate-800 focus:ring-brand-500"></select>
+      </div>
+      <div class="flex items-center gap-3">
+        <span id="dayLabel" class="text-xs font-semibold text-slate-500 bg-slate-100 px-3 py-1.5 rounded-full">--</span>
+        <span id="saveStatus" class="text-xs text-emerald-600 font-semibold opacity-0 transition-opacity"><i class="fa-solid fa-circle-check mr-1"></i>Saved</span>
+      </div>
+    </section>
+
+    <!-- Operational & Financial KPI Cards -->
+    <section class="grid grid-cols-2 md:grid-cols-5 gap-4">
+      <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200"><div class="flex justify-between items-center"><span class="text-xs font-semibold text-slate-400 uppercase">Items Tracked</span><i class="fa-solid fa-list text-brand-500 bg-brand-50 p-2 rounded-lg"></i></div><h3 id="statTotalItems" class="text-2xl font-bold mt-2 text-slate-800">0</h3></div>
+      <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200"><div class="flex justify-between items-center"><span class="text-xs font-semibold text-slate-400 uppercase">Daily Issues</span><i class="fa-solid fa-hand-holding text-amber-500 bg-amber-50 p-2 rounded-lg"></i></div><h3 id="statTotalIssues" class="text-2xl font-bold mt-2 text-slate-800">0</h3></div>
+      <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200"><div class="flex justify-between items-center"><span class="text-xs font-semibold text-slate-400 uppercase">Daily Revenue</span><i class="fa-solid fa-sack-dollar text-emerald-500 bg-emerald-50 p-2 rounded-lg"></i></div><h3 id="statDailyRevenue" class="text-2xl font-bold mt-2 text-emerald-600">$0.00</h3></div>
+      <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200"><div class="flex justify-between items-center"><span class="text-xs font-semibold text-slate-400 uppercase">Est. Gross Profit</span><i class="fa-solid fa-chart-line text-blue-500 bg-blue-50 p-2 rounded-lg"></i></div><h3 id="statGrossProfit" class="text-2xl font-bold mt-2 text-blue-600">$0.00</h3></div>
+      <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 col-span-2 md:col-span-1"><div class="flex justify-between items-center"><span class="text-xs font-semibold text-slate-400 uppercase">Low Stock Alerts</span><i class="fa-solid fa-triangle-exclamation text-rose-500 bg-rose-50 p-2 rounded-lg"></i></div><h3 id="statLowStock" class="text-2xl font-bold mt-2 text-rose-600">0</h3></div>
+    </section>
+
+    <!-- Filters Panel -->
+    <section id="filtersPanel" class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col md:flex-row justify-between items-center gap-3">
+      <div class="flex flex-wrap gap-2" id="categoryFilter">
+        <button data-category="All" class="cat-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-brand-600 text-white">All</button>
+        <button data-category="Dry Food Items" class="cat-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 text-slate-700">Dry Food</button>
+        <button data-category="Soft Drinks" class="cat-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 text-slate-700">Soft Drinks</button>
+        <button data-category="Alcoholic" class="cat-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 text-slate-700">Alcoholic</button>
+        <button data-category="Frozen" class="cat-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 text-slate-700">Frozen</button>
+        <button data-category="Fresh Food Items" class="cat-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 text-slate-700">Fresh Food</button>
+      </div>
+      <input id="searchInput" type="search" placeholder="Search item..." class="w-full md:w-64 bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none">
+    </section>
+
+    <!-- Inventory Data Table -->
+    <section class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse" id="inventoryTable">
+          <thead>
+            <tr class="bg-slate-900 text-slate-200 text-xs uppercase tracking-wider font-semibold">
+              <th class="p-3">ID</th>
+              <th class="p-3">Item Description</th>
+              <th class="p-3">Category</th>
+              <th class="p-3 text-center">Unit</th>
+              <th class="p-3 text-center">Opening</th>
+              <th class="p-3 text-center">Added</th>
+              <th class="p-3 text-center">Issues</th>
+              <th class="p-3 text-center">Closing</th>
+              <th class="p-3 text-right">Cost Price</th>
+              <th class="p-3 text-right">Sale Price</th>
+              <th class="p-3 text-right">Est. Revenue</th>
+              <th class="p-3">Comments</th>
+              <th class="p-3 text-center">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody" class="divide-y divide-slate-200 text-xs font-medium"></tbody>
+        </table>
+      </div>
+      <div id="emptyState" class="hidden p-8 text-center text-sm text-slate-500">No inventory items found for this date/location.</div>
+    </section>
+
+    <!-- Category Chart Section -->
+    <section class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
+      <h3 class="text-sm font-bold text-slate-800 mb-4 flex items-center"><i class="fa-solid fa-chart-bar text-brand-600 mr-2"></i>Daily Issues Breakdown by Category</h3>
+      <div class="h-64"><canvas id="categoryChart"></canvas></div>
+    </section>
+  </main>
+
+  <!-- Add/Edit Inventory Item Modal -->
+  <div id="itemModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-2xl shadow-xl max-w-lg w-full overflow-hidden border border-slate-200">
+      <div class="bg-slate-900 text-white px-6 py-4 flex justify-between items-center">
+        <h3 id="modalTitle" class="font-bold text-sm">Add Inventory Item</h3>
+        <button id="closeItemX" type="button" class="text-slate-300 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+      </div>
+      <form id="itemForm" class="p-6 space-y-4">
+        <input type="hidden" id="editIndex" value="-1">
+        <div class="grid grid-cols-3 gap-3">
+          <div><label class="block text-xs font-semibold mb-1 text-slate-600">Item ID</label><input id="itemId" class="w-full border rounded-lg px-3 py-2 text-xs" placeholder="Auto"></div>
+          <div class="col-span-2"><label class="block text-xs font-semibold mb-1 text-slate-600">Item Description</label><input id="itemDescription" required maxlength="120" class="w-full border rounded-lg px-3 py-2 text-xs"></div>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div><label class="block text-xs font-semibold mb-1 text-slate-600">Category</label><select id="itemCategory" required class="w-full border rounded-lg px-3 py-2 text-xs"><option>Dry Food Items</option><option>Soft Drinks</option><option>Alcoholic</option><option>Frozen</option><option>Fresh Food Items</option></select></div>
+          <div><label class="block text-xs font-semibold mb-1 text-slate-600">Specification / Unit</label><input id="itemSpec" required maxlength="30" placeholder="Kg, Pkt, Can" class="w-full border rounded-lg px-3 py-2 text-xs"></div>
+        </div>
+        <div class="grid grid-cols-3 gap-3">
+          <div><label class="block text-xs font-semibold mb-1 text-slate-600">Opening Stock</label><input id="itemOpening" type="number" min="0" step="any" required value="0" class="w-full border rounded-lg px-3 py-2 text-xs"></div>
+          <div><label class="block text-xs font-semibold mb-1 text-slate-600">Stock Added</label><input id="itemAdded" type="number" min="0" step="any" value="0" class="w-full border rounded-lg px-3 py-2 text-xs"></div>
+          <div><label class="block text-xs font-semibold mb-1 text-slate-600">Daily Issues</label><input id="itemIssues" type="number" min="0" step="any" value="0" class="w-full border rounded-lg px-3 py-2 text-xs"></div>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div><label class="block text-xs font-semibold mb-1 text-slate-600">Unit Cost ($)</label><input id="itemCost" type="number" min="0" step="0.01" value="0.00" class="w-full border rounded-lg px-3 py-2 text-xs"></div>
+          <div><label class="block text-xs font-semibold mb-1 text-slate-600">Selling Price ($)</label><input id="itemPrice" type="number" min="0" step="0.01" value="0.00" class="w-full border rounded-lg px-3 py-2 text-xs"></div>
+        </div>
+        <div><label class="block text-xs font-semibold mb-1 text-slate-600">Comments / Transfers</label><input id="itemComments" maxlength="300" class="w-full border rounded-lg px-3 py-2 text-xs" placeholder="Notes..."></div>
+        <div class="flex justify-end gap-2 pt-2">
+          <button id="cancelItemBtn" type="button" class="bg-slate-100 hover:bg-slate-200 px-4 py-2 rounded-lg text-xs font-semibold">Cancel</button>
+          <button type="submit" class="bg-brand-600 hover:bg-brand-700 text-white px-5 py-2 rounded-lg text-xs font-semibold shadow-md">Save Entry</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Reorder & Supplier Draft Modal -->
+  <div id="reorderModal" class="fixed inset-0 bg-slate-900/70 hidden items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto space-y-4">
+      <div class="flex justify-between items-center border-b pb-3">
+        <h2 class="font-bold text-base text-slate-800 flex items-center gap-2"><i class="fa-solid fa-cart-flatbed text-amber-500"></i>Reorder & Low Stock Draft</h2>
+        <button id="closeReorderX" type="button"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <p class="text-xs text-slate-500">Items below or equal to 5 units in closing stock at <b id="reorderLocationLabel">--</b>:</p>
+      <div id="reorderItemsList" class="space-y-2 text-xs"></div>
+      <div>
+        <label class="block text-xs font-semibold mb-1 text-slate-700">Supplier Order Text / WhatsApp Message Draft:</label>
+        <textarea id="reorderDraftText" rows="6" readonly class="w-full bg-slate-50 border rounded-lg p-3 text-xs font-mono"></textarea>
+      </div>
+      <div class="flex justify-end gap-2">
+        <button id="copyReorderBtn" type="button" class="bg-brand-600 hover:bg-brand-700 text-white px-4 py-2 rounded-lg text-xs font-semibold"><i class="fa-solid fa-copy mr-1"></i>Copy Text</button>
+        <button id="closeReorderBtn" type="button" class="bg-slate-100 hover:bg-slate-200 px-4 py-2 rounded-lg text-xs font-semibold">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Audit Log Viewer Modal -->
+  <div id="auditModal" class="fixed inset-0 bg-slate-900/70 hidden items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-xl p-6 w-full max-w-3xl max-h-[90vh] overflow-y-auto space-y-4">
+      <div class="flex justify-between items-center border-b pb-3">
+        <h2 class="font-bold text-base text-slate-800 flex items-center gap-2"><i class="fa-solid fa-clock-rotate-left text-brand-600"></i>Storekeeper Activity & Audit Log</h2>
+        <button id="closeAuditX" type="button"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div id="auditList" class="space-y-2 text-xs"></div>
+      <div class="flex justify-end">
+        <button id="closeAuditBtn" type="button" class="bg-slate-100 hover:bg-slate-200 px-4 py-2 rounded-lg text-xs font-semibold">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Store Locations & Accounts Management Modal -->
+  <div id="userManagerModal" class="fixed inset-0 bg-slate-900/70 hidden items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-xl p-6 w-full max-w-2xl max-h-[92vh] overflow-y-auto space-y-4">
+      <div class="flex justify-between items-center"><h2 class="font-bold text-lg text-slate-800">Manage Store Locations & Accounts</h2><button id="closeUsersX" type="button"><i class="fa-solid fa-xmark"></i></button></div>
+      
+      <!-- Store Locations List & Add Form -->
+      <div class="space-y-2">
+        <h3 class="font-bold text-sm text-slate-800">Store Locations</h3>
+        <form id="locationForm" class="flex flex-col sm:flex-row gap-2">
+          <input id="newLocationName" required maxlength="80" placeholder="New location name (e.g. Malakal Branch)" class="border rounded-lg p-2 flex-1 text-sm">
+          <button type="submit" class="bg-brand-600 hover:bg-brand-700 text-white rounded-lg px-4 py-2 text-sm font-semibold">Add Store Location</button>
+        </form>
+        <div id="locationList" class="space-y-1.5 pt-2"></div>
+      </div>
+
+      <hr class="my-4">
+
+      <!-- Storekeeper Account Creation -->
+      <h3 class="font-bold text-sm text-slate-800">Create Storekeeper Account</h3>
+      <form id="userForm" class="grid sm:grid-cols-2 gap-3">
+        <input id="newUsername" required minlength="3" maxlength="40" autocomplete="off" placeholder="Username (e.g. store_juba)" class="border rounded-lg p-2 text-sm">
+        <input id="newDisplayName" required maxlength="80" placeholder="Storekeeper full name" class="border rounded-lg p-2 text-sm">
+        <input id="newPassword" required minlength="8" type="password" autocomplete="new-password" placeholder="Password (8+ characters)" class="border rounded-lg p-2 text-sm">
+        <select id="newUserLocation" required class="border rounded-lg p-2 text-sm"></select>
+        <button type="submit" class="sm:col-span-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg p-2 font-semibold text-sm shadow-md">Create Storekeeper Account</button>
+      </form>
+
+      <hr class="my-4">
+
+      <!-- Active Accounts List -->
+      <h3 class="font-bold text-sm text-slate-800">Existing Accounts</h3>
+      <div id="accountList" class="space-y-2 text-sm"></div>
+      <button id="closeUsersBtn" type="button" class="w-full bg-slate-100 rounded-lg p-2 text-sm font-semibold mt-2">Close</button>
+    </div>
+  </div>
+
+<script>
+"use strict";
+
+const USERS_KEY = "gas_bentiu_users_v4";
+const LOCATIONS_KEY = "gas_bentiu_locations_v4";
+const DATA_PREFIX = "gas_bentiu_inventory_v4";
+const AUDIT_KEY = "gas_bentiu_audit_v4";
+
+const INITIAL_MANAGER = {
+  username: "admin",
+  password: "admin2026",
+  role: "Manager",
+  location: "All Locations",
+  name: "General Manager",
+  disabled: false
+};
+
+const DEFAULT_LOCATIONS = ["Bentiu Main Camp", "Juba Depot"];
+
+const defaultCatalog = [
+  {id:"1",desc:"Sugar brown",cat:"Dry Food Items",spec:"Kg",opening:100,added:0,issues:0,cost:1.20,price:1.80,comments:""},
+  {id:"2",desc:"Sugar white",cat:"Dry Food Items",spec:"Kg",opening:50,added:0,issues:0,cost:1.10,price:1.60,comments:""},
+  {id:"3",desc:"Beans",cat:"Dry Food Items",spec:"Kg",opening:75,added:0,issues:0,cost:1.50,price:2.20,comments:""},
+  {id:"4",desc:"Posho",cat:"Dry Food Items",spec:"Kg",opening:100,added:0,issues:0,cost:0.80,price:1.20,comments:""},
+  {id:"26",desc:"Tusker lager can",cat:"Alcoholic",spec:"Can",opening:1440,added:0,issues:0,cost:1.50,price:2.50,comments:""},
+  {id:"35",desc:"Juice mix",cat:"Soft Drinks",spec:"Pkt",opening:600,added:0,issues:0,cost:0.50,price:1.00,comments:""},
+  {id:"37",desc:"Water big size",cat:"Soft Drinks",spec:"Bottle",opening:864,added:0,issues:0,cost:0.40,price:0.80,comments:""},
+  {id:"94",desc:"Chicken (whole)",cat:"Frozen",spec:"Pc",opening:92,added:0,issues:0,cost:5.00,price:8.00,comments:""},
+  {id:"119",desc:"Chicken Eggs",cat:"Fresh Food Items",spec:"Tray",opening:40,added:0,issues:0,cost:3.50,price:5.00,comments:""}
+];
+
+let usersDB = [];
+let locationsDB = [];
+let auditDB = [];
+let currentUser = null;
+let activeLocation = "Bentiu Main Camp";
+let currentActiveCategory = "All";
+let chartInstance = null;
+let saveStatusTimer = null;
+
+const $ = id => document.getElementById(id);
+const isManager = () => !!currentUser && currentUser.role === "Manager";
+const isStorekeeper = () => !!currentUser && currentUser.role === "Storekeeper";
+
+function readJSON(key, fallback) {
+  try {
+    const value = localStorage.getItem(key);
+    return value === null ? fallback : JSON.parse(value);
+  } catch (error) {
+    console.error("Could not read local data:", error);
+    return fallback;
+  }
+}
+
+function saveUsers() { localStorage.setItem(USERS_KEY, JSON.stringify(usersDB)); }
+function saveLocations() { localStorage.setItem(LOCATIONS_KEY, JSON.stringify(locationsDB)); }
+function saveAudit() { localStorage.setItem(AUDIT_KEY, JSON.stringify(auditDB)); }
+
+function logAudit(action, details) {
+  const entry = {
+    timestamp: new Date().toLocaleString(),
+    user: currentUser ? currentUser.username : "System",
+    role: currentUser ? currentUser.role : "-",
+    location: activeLocation,
+    date: dateKey(),
+    action,
+    details
+  };
+  auditDB.unshift(entry);
+  if (auditDB.length > 200) auditDB.pop();
+  saveAudit();
+}
+
+function requireLogin() {
+  if (!currentUser) { alert("Please sign in first."); return false; }
+  return true;
+}
+
+function requireManager() {
+  if (!isManager()) { alert("Access denied. Manager permission required."); return false; }
+  return true;
+}
+
+function localDateString(date = new Date()) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth()+1).padStart(2,"0");
+  const d = String(date.getDate()).padStart(2,"0");
+  return `${y}-${m}-${d}`;
+}
+
+function dateKey() { return $("selectedDate").value; }
+
+function storageKey(location, date) {
+  return `${DATA_PREFIX}_${encodeURIComponent(location)}_${date}`;
+}
+
+function initializeApp() {
+  locationsDB = readJSON(LOCATIONS_KEY, null) || [...DEFAULT_LOCATIONS];
+  locationsDB = [...new Set(locationsDB.filter(x => typeof x === "string" && x.trim()))];
+  if (!locationsDB.length) locationsDB = [...DEFAULT_LOCATIONS];
+
+  usersDB = readJSON(USERS_KEY, null);
+  if (!Array.isArray(usersDB)) {
+    usersDB = [
+      {...INITIAL_MANAGER},
+      {username:"store_bentiu",password:"bentiu2026",role:"Storekeeper",location:"Bentiu Main Camp",name:"Bentiu Storekeeper",disabled:false}
+    ];
+  }
+
+  auditDB = readJSON(AUDIT_KEY, []);
+
+  saveLocations();
+  saveUsers();
+  $("selectedDate").value = localDateString();
+  bindEvents();
+  updateDayLabel();
+}
+
+function bindEvents() {
+  $("loginForm").addEventListener("submit", handleLogin);
+  $("logoutBtn").addEventListener("click", logout);
+  $("manageUsersBtn").addEventListener("click", openUserManager);
+  $("auditBtn").addEventListener("click", openAuditModal);
+  $("reorderBtn").addEventListener("click", openReorderModal);
+  $("exportBtn").addEventListener("click", exportCSV);
+  $("printBtn").addEventListener("click", () => window.print());
+  $("newItemBtn").addEventListener("click", openNewItemModal);
+  $("locationSelector").addEventListener("change", switchLocation);
+  $("selectedDate").addEventListener("change", loadDateData);
+  $("prevDateBtn").addEventListener("click", () => changeDate(-1));
+  $("nextDateBtn").addEventListener("click", () => changeDate(1));
+  $("todayBtn").addEventListener("click", setToday);
+  $("searchInput").addEventListener("input", renderTable);
+  $("categoryFilter").addEventListener("click", e => {
+    const button = e.target.closest("button[data-category]");
+    if (button) filterCategory(button.dataset.category);
+  });
+  $("itemForm").addEventListener("submit", saveItem);
+  $("closeItemX").addEventListener("click", closeItemModal);
+  $("cancelItemBtn").addEventListener("click", closeItemModal);
+  $("locationForm").addEventListener("submit", createLocation);
+  $("userForm").addEventListener("submit", createStorekeeper);
+  $("closeUsersX").addEventListener("click", closeUserManager);
+  $("closeUsersBtn").addEventListener("click", closeUserManager);
+  $("closeAuditX").addEventListener("click", closeAuditModal);
+  $("closeAuditBtn").addEventListener("click", closeAuditModal);
+  $("closeReorderX").addEventListener("click", closeReorderModal);
+  $("closeReorderBtn").addEventListener("click", closeReorderModal);
+  $("copyReorderBtn").addEventListener("click", copyReorderText);
+}
+
+function handleLogin(event) {
+  event.preventDefault();
+  const username = $("loginUser").value.trim().toLowerCase();
+  const password = $("loginPass").value;
+  const user = usersDB.find(u => !u.disabled && u.username.toLowerCase() === username && u.password === password);
+
+  if (!user) {
+    $("loginError").classList.remove("hidden");
+    return;
+  }
+
+  currentUser = user;
+  $("loginModal").classList.add("hidden");
+  $("loginError").classList.add("hidden");
+  $("displayUserName").textContent = `${user.name} (${user.role})`;
+
+  if (isManager()) {
+    activeLocation = locationsDB.includes("Bentiu Main Camp") ? "Bentiu Main Camp" : locationsDB[0];
+    $("managerLocationBox").classList.remove("hidden");
+    $("managerLocationBox").classList.add("flex");
+    $("manageUsersBtn").classList.remove("hidden");
+    $("auditBtn").classList.remove("hidden");
+    $("newItemBtn").classList.remove("hidden");
+    populateLocationSelector();
+  } else {
+    activeLocation = user.location;
+    $("managerLocationBox").classList.add("hidden");
+    $("managerLocationBox").classList.remove("flex");
+    $("manageUsersBtn").classList.add("hidden");
+    $("auditBtn").classList.add("hidden");
+    $("newItemBtn").classList.add("hidden");
+  }
+
+  $("locationSelector").value = activeLocation;
+  updateLocationBadge();
+  logAudit("Login", `Logged in at ${activeLocation}`);
+  loadDateData();
+}
+
+function logout() {
+  if (currentUser) logAudit("Logout", `Logged out from ${activeLocation}`);
+  currentUser = null;
+  $("loginModal").classList.remove("hidden");
+  $("loginUser").value = "";
+  $("loginPass").value = "";
+  $("displayUserName").textContent = "Signed out";
+  $("locationBadge").textContent = "Signed out";
+  $("managerLocationBox").classList.add("hidden");
+  $("manageUsersBtn").classList.add("hidden");
+  $("auditBtn").classList.add("hidden");
+  $("newItemBtn").classList.add("hidden");
+  closeUserManager();
+  closeItemModal();
+  closeAuditModal();
+  closeReorderModal();
+  $("tableBody").replaceChildren();
+  ["statTotalItems","statTotalIssues","statDailyRevenue","statGrossProfit","statLowStock"].forEach(id => $(id).textContent = "0");
+  if (chartInstance) { chartInstance.destroy(); chartInstance = null; }
+}
+
+function updateLocationBadge() { $("locationBadge").textContent = activeLocation; }
+
+function populateLocationSelector() {
+  const select = $("locationSelector");
+  select.replaceChildren();
+  locationsDB.forEach(location => {
+    const option = document.createElement("option");
+    option.value = location;
+    option.textContent = location;
+    select.appendChild(option);
+  });
+  select.value = activeLocation;
+}
+
+function switchLocation() {
+  if (!requireManager()) return;
+  const selected = $("locationSelector").value;
+  activeLocation = selected;
+  updateLocationBadge();
+  loadDateData();
+}
+
+function setToday() { $("selectedDate").value = localDateString(); loadDateData(); }
+
+function changeDate(days) {
+  const date = new Date(($("selectedDate").value || localDateString()) + "T12:00:00");
+  date.setDate(date.getDate() + days);
+  $("selectedDate").value = localDateString(date);
+  loadDateData();
+}
+
+function updateDayLabel() {
+  const value = dateKey();
+  if (!value) { $("dayLabel").textContent = "--"; return; }
+  const date = new Date(value + "T12:00:00");
+  $("dayLabel").textContent = date.toLocaleDateString("en-US", { weekday:"long", year:"numeric", month:"short", day:"numeric" });
+}
+
+function normalizeItem(item) {
+  return {
+    id: String(item.id ?? ""),
+    desc: String(item.desc ?? ""),
+    cat: String(item.cat ?? "Dry Food Items"),
+    spec: String(item.spec ?? ""),
+    opening: Number(item.opening) || 0,
+    added: Number(item.added) || 0,
+    issues: Number(item.issues) || 0,
+    cost: Number(item.cost) || 0,
+    price: Number(item.price) || 0,
+    comments: String(item.comments ?? "")
+  };
+}
+
+function loadDateData() {
+  if (!requireLogin()) return;
+  if (!dateKey()) $("selectedDate").value = localDateString();
+  updateDayLabel();
+
+  const key = storageKey(activeLocation, dateKey());
+  let current = readJSON(key, null);
+
+  if (!Array.isArray(current)) {
+    const date = new Date(dateKey() + "T12:00:00");
+    date.setDate(date.getDate() - 1);
+    const previousKey = storageKey(activeLocation, localDateString(date));
+    const previous = readJSON(previousKey, null);
+
+    if (Array.isArray(previous)) {
+      current = previous.map(raw => {
+        const item = normalizeItem(raw);
+        return {...item, opening: Math.max(0, item.opening + item.added - item.issues), added:0, issues:0, comments:""};
+      });
+    } else {
+      current = defaultCatalog.map(item => ({...item}));
+    }
+    localStorage.setItem(key, JSON.stringify(current));
+  }
+  renderTable();
+}
+
+function getActiveData() {
+  if (!requireLogin()) return [];
+  const value = readJSON(storageKey(activeLocation, dateKey()), []);
+  return Array.isArray(value) ? value.map(normalizeItem) : [];
+}
+
+function saveActiveData(data) {
+  if (!requireLogin()) return;
+  localStorage.setItem(storageKey(activeLocation, dateKey()), JSON.stringify(data));
+  $("saveStatus").classList.remove("opacity-0");
+  clearTimeout(saveStatusTimer);
+  saveStatusTimer = setTimeout(() => $("saveStatus").classList.add("opacity-0"), 1600);
+  renderTable();
+}
+
+function filterCategory(category) {
+  currentActiveCategory = category;
+  document.querySelectorAll(".cat-btn").forEach(button => {
+    const active = button.dataset.category === category;
+    button.className = "cat-btn px-3 py-1.5 rounded-lg text-xs font-semibold " +
+      (active ? "bg-brand-600 text-white" : "bg-slate-100 hover:bg-slate-200 text-slate-700");
+  });
+  renderTable();
+}
+
+function renderTable() {
+  if (!currentUser) return;
+  const data = getActiveData();
+  const tbody = $("tableBody");
+  const search = $("searchInput").value.trim().toLowerCase();
+  tbody.replaceChildren();
+
+  let totalItems = 0, totalIssues = 0, totalRevenue = 0, totalProfit = 0, lowStockCount = 0;
+  const categorySums = {};
+
+  data.forEach((item, index) => {
+    const closing = item.opening + item.added - item.issues;
+    const itemRev = item.issues * item.price;
+    const itemCostTotal = item.issues * item.cost;
+    const itemProfit = itemRev - itemCostTotal;
+
+    categorySums[item.cat] = (categorySums[item.cat] || 0) + item.issues;
+
+    const matchesCategory = currentActiveCategory === "All" || item.cat === currentActiveCategory;
+    const matchesSearch = [item.id, item.desc, item.cat, item.spec, item.comments]
+      .some(v => String(v ?? "").toLowerCase().includes(search));
+
+    if (!matchesCategory || !matchesSearch) return;
+
+    totalItems++;
+    totalIssues += item.issues;
+    totalRevenue += itemRev;
+    totalProfit += itemProfit;
+    if (closing <= 5) lowStockCount++;
+
+    const row = document.createElement("tr");
+    row.className = closing <= 5 ? "bg-rose-50/50 hover:bg-rose-100/50" : "hover:bg-slate-50";
+
+    row.innerHTML = `
+      <td class="p-3 text-slate-400 font-mono">${item.id}</td>
+      <td class="p-3 font-semibold text-slate-800">${item.desc}</td>
+      <td class="p-3"><span class="bg-slate-100 text-slate-700 px-2 py-0.5 rounded text-[10px] font-bold uppercase">${item.cat}</span></td>
+      <td class="p-3 text-center text-slate-500">${item.spec}</td>
+      <td class="p-3 text-center font-semibold">${item.opening}</td>
+      <td class="p-3 text-center text-emerald-600 font-semibold">+${item.added}</td>
+      <td class="p-3 text-center text-amber-600 font-semibold">-${item.issues}</td>
+      <td class="p-3 text-center"><span class="px-2 py-1 rounded-md ${closing <= 5 ? 'bg-rose-100 text-rose-700 font-extrabold' : 'bg-slate-100 text-slate-900'}">${closing}</span></td>
+      <td class="p-3 text-right font-mono text-slate-600">$${item.cost.toFixed(2)}</td>
+      <td class="p-3 text-right font-mono text-slate-600">$${item.price.toFixed(2)}</td>
+      <td class="p-3 text-right font-mono font-bold text-emerald-600">$${itemRev.toFixed(2)}</td>
+      <td class="p-3 text-slate-500 italic max-w-xs truncate">${item.comments || "-"}</td>
+      <td class="p-3 text-center whitespace-nowrap">
+        ${isManager() ? `
+          <button type="button" onclick="editItem(${index})" class="text-brand-600 hover:text-brand-800 p-1.5" title="Edit"><i class="fa-solid fa-pen"></i></button>
+          <button type="button" onclick="deleteItem(${index})" class="text-rose-600 hover:text-rose-800 p-1.5" title="Delete"><i class="fa-solid fa-trash"></i></button>
+        ` : `
+          <button type="button" onclick="quickIssueModal(${index})" class="bg-amber-100 hover:bg-amber-200 text-amber-800 px-2.5 py-1 rounded text-[10px] font-bold"><i class="fa-solid fa-pen-to-square mr-1"></i>Log Stock</button>
+        `}
+      </td>
+    `;
+    tbody.appendChild(row);
+  });
+
+  $("emptyState").classList.toggle("hidden", totalItems !== 0);
+  $("statTotalItems").textContent = totalItems;
+  $("statTotalIssues").textContent = totalIssues;
+  $("statDailyRevenue").textContent = `$${totalRevenue.toFixed(2)}`;
+  $("statGrossProfit").textContent = `$${totalProfit.toFixed(2)}`;
+  $("statLowStock").textContent = lowStockCount;
+
+  updateChart(categorySums);
+}
+
+function updateChart(categorySums) {
+  const canvas = $("categoryChart");
+  if (!canvas) return;
+  if (chartInstance) { chartInstance.destroy(); chartInstance = null; }
+  chartInstance = new Chart(canvas.getContext("2d"), {
+    type:"bar",
+    data:{
+      labels:Object.keys(categorySums),
+      datasets:[{ label:"Total Issues", data:Object.values(categorySums), backgroundColor:"#3b82f6", borderRadius:8 }]
+    },
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true}, x:{grid:{display:false}}} }
+  });
+}
+
+function openItemModal() { $("itemModal").classList.remove("hidden"); $("itemModal").classList.add("flex"); }
+function closeItemModal() { $("itemModal").classList.add("hidden"); $("itemModal").classList.remove("flex"); $("itemForm").reset(); $("editIndex").value = "-1"; }
+
+function openNewItemModal() {
+  if (!requireManager()) return;
+  $("itemForm").reset();
+  $("editIndex").value = "-1";
+  ["itemId","itemDescription","itemCategory","itemSpec","itemOpening","itemCost","itemPrice"].forEach(id => $(id).disabled = false);
+  $("modalTitle").textContent = "Add New Inventory Item";
+  openItemModal();
+}
+
+function editItem(index) {
+  if (!requireManager()) return;
+  const item = getActiveData()[index];
+  if (!item) return;
+  $("editIndex").value = index;
+  $("modalTitle").textContent = "Manager Edit: " + item.desc;
+  ["itemId","itemDescription","itemCategory","itemSpec","itemOpening","itemCost","itemPrice"].forEach(id => $(id).disabled = false);
+  fillItemForm(item);
+  openItemModal();
+}
+
+function quickIssueModal(index) {
+  const item = getActiveData()[index];
+  if (!item) return;
+  $("editIndex").value = index;
+  $("modalTitle").textContent = "Log Stock Entry: " + item.desc;
+  fillItemForm(item);
+  ["itemId","itemDescription","itemCategory","itemSpec","itemOpening","itemCost","itemPrice"].forEach(id => $(id).disabled = true);
+  $("itemAdded").disabled = false;
+  $("itemIssues").disabled = false;
+  $("itemComments").disabled = false;
+  openItemModal();
+}
+
+function fillItemForm(item) {
+  $("itemId").value = item.id;
+  $("itemDescription").value = item.desc;
+  $("itemCategory").value = item.cat;
+  $("itemSpec").value = item.spec;
+  $("itemOpening").value = item.opening;
+  $("itemAdded").value = item.added;
+  $("itemIssues").value = item.issues;
+  $("itemCost").value = item.cost;
+  $("itemPrice").value = item.price;
+  $("itemComments").value = item.comments;
+}
+
+function saveItem(event) {
+  event.preventDefault();
+  if (!requireLogin()) return;
+
+  const index = Number.parseInt($("editIndex").value, 10);
+  const data = getActiveData();
+
+  if (isManager()) {
+    const newItem = {
+      id: $("itemId").value.trim() || String(Date.now()),
+      desc: $("itemDescription").value.trim(),
+      cat: $("itemCategory").value,
+      spec: $("itemSpec").value.trim(),
+      opening: Number($("itemOpening").value || 0),
+      added: Number($("itemAdded").value || 0),
+      issues: Number($("itemIssues").value || 0),
+      cost: Number($("itemCost").value || 0),
+      price: Number($("itemPrice").value || 0),
+      comments: $("itemComments").value.trim()
+    };
+    if (index < 0) {
+      data.push(newItem);
+      logAudit("Item Created", `Created item: ${newItem.desc} (ID: ${newItem.id})`);
+    } else {
+      data[index] = newItem;
+      logAudit("Item Updated", `Updated item: ${newItem.desc}`);
+    }
+  } else {
+    const existing = data[index];
+    const added = Number($("itemAdded").value || 0);
+    const issues = Number($("itemIssues").value || 0);
+    data[index] = {...existing, added, issues, comments:$("itemComments").value.trim()};
+    logAudit("Stock Logged", `Logged movement for ${existing.desc}: +${added} added, -${issues} issued`);
+  }
+
+  saveActiveData(data);
+  closeItemModal();
+}
+
+function deleteItem(index) {
+  if (!requireManager()) return;
+  const data = getActiveData();
+  const item = data[index];
+  if (!item || !confirm(`Delete ${item.desc}?`)) return;
+  data.splice(index, 1);
+  logAudit("Item Deleted", `Deleted item: ${item.desc}`);
+  saveActiveData(data);
+}
+
+function openReorderModal() {
+  const data = getActiveData();
+  const lowItems = data.filter(i => (i.opening + i.added - i.issues) <= 5);
+  $("reorderLocationLabel").textContent = activeLocation;
+
+  const list = $("reorderItemsList");
+  list.replaceChildren();
+
+  if (!lowItems.length) {
+    list.innerHTML = `<p class="text-emerald-600 font-semibold p-3 bg-emerald-50 rounded-lg">All items are sufficiently stocked above 5 units!</p>`;
+    $("reorderDraftText").value = "No reorders required today.";
+  } else {
+    let draft = `PURCHASE ORDER DRAFT\nLocation: ${activeLocation}\nDate: ${dateKey()}\n-------------------------------------\n`;
+    lowItems.forEach(i => {
+      const closing = i.opening + i.added - i.issues;
+      const div = document.createElement("div");
+      div.className = "flex justify-between items-center bg-rose-50 border border-rose-200 p-2.5 rounded-lg text-rose-900";
+      div.innerHTML = `<span><b>${i.desc}</b> (${i.cat})</span> <span class="bg-rose-200 px-2 py-0.5 rounded font-bold">Closing: ${closing} ${i.spec}</span>`;
+      list.appendChild(div);
+      draft += `• ${i.desc} (${i.spec}) - Current Stock: ${closing} | Reorder Qty Needed: [   ]\n`;
+    });
+    draft += `-------------------------------------\nRequested By: ${currentUser.name}\nApproved By Manager: [   ]`;
+    $("reorderDraftText").value = draft;
+  }
+
+  $("reorderModal").classList.remove("hidden");
+  $("reorderModal").classList.add("flex");
+}
+
+function closeReorderModal() { $("reorderModal").classList.add("hidden"); $("reorderModal").classList.remove("flex"); }
+
+function copyReorderText() {
+  const text = $("reorderDraftText");
+  text.select();
+  document.execCommand("copy");
+  alert("Reorder draft text copied to clipboard!");
+}
+
+function openAuditModal() {
+  if (!requireManager()) return;
+  const list = $("auditList");
+  list.replaceChildren();
+
+  if (!auditDB.length) {
+    list.innerHTML = `<p class="text-slate-500 text-xs">No activity logged yet.</p>`;
+  } else {
+    auditDB.forEach(a => {
+      const div = document.createElement("div");
+      div.className = "p-2.5 border border-slate-200 rounded-lg bg-slate-50 text-xs flex justify-between items-start";
+      div.innerHTML = `
+        <div>
+          <span class="font-bold text-brand-700">${a.action}</span> &bull; <span class="font-semibold text-slate-800">${a.details}</span>
+          <div class="text-[10px] text-slate-500 mt-0.5">By: <b>${a.user}</b> (${a.role}) | Location: ${a.location}</div>
+        </div>
+        <span class="text-[10px] text-slate-400 font-mono">${a.timestamp}</span>
+      `;
+      list.appendChild(div);
+    });
+  }
+
+  $("auditModal").classList.remove("hidden");
+  $("auditModal").classList.add("flex");
+}
+
+function closeAuditModal() { $("auditModal").classList.add("hidden"); $("auditModal").classList.remove("flex"); }
+
+function exportCSV() {
+  if (!requireLogin()) return;
+  const data = getActiveData();
+  const date = dateKey();
+  const rows = [["Location","Date","Item ID","Description","Category","Unit","Opening","Added","Issues","Closing","Unit Cost","Unit Price","Revenue","Profit","Comments"]];
+  
+  data.forEach(item => {
+    const closing = item.opening + item.added - item.issues;
+    const rev = item.issues * item.price;
+    const profit = rev - (item.issues * item.cost);
+    rows.push([
+      activeLocation, date, item.id, item.desc, item.cat, item.spec,
+      item.opening, item.added, item.issues, closing, item.cost.toFixed(2), item.price.toFixed(2), rev.toFixed(2), profit.toFixed(2), item.comments
+    ]);
+  });
+
+  const csv = rows.map(r => r.map(v => '"' + String(v ?? "").replace(/"/g,'""') + '"').join(",")).join("\r\n");
+  const blob = new Blob(["\uFEFF" + csv], {type:"text/csv;charset=utf-8;"});
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = `Gas_Bentiu_${activeLocation.replace(/[^a-z0-9_-]/gi,"_")}_${date}.csv`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+}
+
+function openUserManager() {
+  if (!requireManager()) return;
+  refreshAccountManager();
+  $("userManagerModal").classList.remove("hidden");
+  $("userManagerModal").classList.add("flex");
+}
+
+function closeUserManager() { $("userManagerModal").classList.add("hidden"); $("userManagerModal").classList.remove("flex"); }
+
+function createLocation(event) {
+  event.preventDefault();
+  if (!requireManager()) return;
+  const name = $("newLocationName").value.trim();
+  if (!name) return;
+  if (locationsDB.some(l => l.toLowerCase() === name.toLowerCase())) { alert("Location already exists."); return; }
+  locationsDB.push(name);
+  saveLocations();
+  logAudit("Location Created", `Created location: ${name}`);
+  $("newLocationName").value = "";
+  refreshAccountManager();
+}
+
+function renameLocation(oldName) {
+  if (!requireManager()) return;
+  const newName = prompt(`Enter new name for store location '${oldName}':`, oldName);
+  if (!newName || newName.trim() === "" || newName.trim() === oldName) return;
+
+  const trimmedNew = newName.trim();
+  if (locationsDB.some(l => l.toLowerCase() === trimmedNew.toLowerCase())) {
+    alert("A store location with that name already exists.");
+    return;
+  }
+
+  // 1. Update locations array
+  const locIndex = locationsDB.indexOf(oldName);
+  if (locIndex !== -1) locationsDB[locIndex] = trimmedNew;
+  saveLocations();
+
+  // 2. Update all assigned users
+  usersDB.forEach(u => {
+    if (u.location === oldName) u.location = trimmedNew;
+  });
+  saveUsers();
+
+  // 3. Migrate all stored inventory data in localStorage
+  const oldPrefix = `${DATA_PREFIX}_${encodeURIComponent(oldName)}_`;
+  const newPrefix = `${DATA_PREFIX}_${encodeURIComponent(trimmedNew)}_`;
+  
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key && key.startsWith(oldPrefix)) {
+      const val = localStorage.getItem(key);
+      const newKey = key.replace(oldPrefix, newPrefix);
+      localStorage.setItem(newKey, val);
+    }
+  }
+
+  // 4. Update active location if needed
+  if (activeLocation === oldName) {
+    activeLocation = trimmedNew;
+    updateLocationBadge();
+  }
+
+  logAudit("Location Renamed", `Renamed location '${oldName}' to '${trimmedNew}'`);
+  refreshAccountManager();
+  loadDateData();
+}
+
+function deleteLocation(name) {
+  if (!requireManager()) return;
+  if (locationsDB.length <= 1) {
+    alert("You must keep at least one active store location.");
+    return;
+  }
+
+  const assignedUsers = usersDB.filter(u => !u.disabled && u.location === name && u.role === "Storekeeper");
+  if (assignedUsers.length > 0) {
+    alert(`Cannot delete '${name}'. Storekeepers (${assignedUsers.map(u => u.username).join(', ')}) are assigned to it. Reassign or disable them first.`);
+    return;
+  }
+
+  if (!confirm(`Are you sure you want to delete store location '${name}'? Existing inventory history for this store will remain archived.`)) return;
+
+  locationsDB = locationsDB.filter(l => l !== name);
+  saveLocations();
+
+  if (activeLocation === name) {
+    activeLocation = locationsDB[0];
+    updateLocationBadge();
+  }
+
+  logAudit("Location Deleted", `Deleted location '${name}'`);
+  refreshAccountManager();
+  loadDateData();
+}
+
+function createStorekeeper(event) {
+  event.preventDefault();
+  if (!requireManager()) return;
+  const username = $("newUsername").value.trim().toLowerCase();
+  const name = $("newDisplayName").value.trim();
+  const password = $("newPassword").value;
+  const location = $("newUserLocation").value;
+
+  if (usersDB.some(u => u.username.toLowerCase() === username)) { alert("Username already exists."); return; }
+
+  usersDB.push({ username, password, role:"Storekeeper", location, name, disabled:false });
+  saveUsers();
+  logAudit("Account Created", `Created storekeeper: ${username} assigned to ${location}`);
+  $("userForm").reset();
+  refreshAccountManager();
+}
+
+function editAccountName(username) {
+  if (!requireManager()) return;
+  const user = usersDB.find(u => u.username === username);
+  if (!user) return;
+
+  const newName = prompt(`Enter new full name for account '${user.username}':`, user.name);
+  if (newName && newName.trim() !== "" && newName.trim() !== user.name) {
+    const oldName = user.name;
+    user.name = newName.trim();
+    saveUsers();
+
+    if (currentUser && currentUser.username === username) {
+      currentUser.name = user.name;
+      $("displayUserName").textContent = `${user.name} (${user.role})`;
+    }
+
+    logAudit("Account Updated", `Renamed '${username}' from '${oldName}' to '${user.name}'`);
+    refreshAccountManager();
+  }
+}
+
+function refreshAccountManager() {
+  // Populate location dropdown
+  const select = $("newUserLocation");
+  select.replaceChildren();
+  locationsDB.forEach(l => {
+    const o = document.createElement("option");
+    o.value = l; o.textContent = l; select.appendChild(o);
+  });
+
+  // Render locations list with Rename and Delete options
+  const locList = $("locationList");
+  locList.replaceChildren();
+  locationsDB.forEach(l => {
+    const div = document.createElement("div");
+    div.className = "flex justify-between items-center bg-slate-100 border border-slate-200 rounded-lg p-2.5 text-xs font-semibold text-slate-800";
+    div.innerHTML = `
+      <div class="flex items-center gap-2"><i class="fa-solid fa-store text-brand-600"></i><span>${l}</span></div>
+      <div class="flex gap-1">
+        <button type="button" onclick="renameLocation('${l}')" class="bg-white hover:bg-slate-200 text-slate-700 px-2 py-1 rounded border border-slate-300 font-medium transition" title="Rename Store"><i class="fa-solid fa-pen mr-1"></i>Rename</button>
+        <button type="button" onclick="deleteLocation('${l}')" class="bg-rose-50 hover:bg-rose-100 text-rose-700 px-2 py-1 rounded border border-rose-200 font-medium transition" title="Delete Store"><i class="fa-solid fa-trash mr-1"></i>Delete</button>
+      </div>
+    `;
+    locList.appendChild(div);
+  });
+
+  // Render accounts list
+  const list = $("accountList");
+  list.replaceChildren();
+  usersDB.filter(u => !u.disabled).forEach(u => {
+    const div = document.createElement("div");
+    div.className = "flex justify-between items-center border border-slate-200 rounded-lg p-3 bg-slate-50 gap-2";
+    div.innerHTML = `
+      <div>
+        <div class="font-bold text-slate-800">${u.name}</div>
+        <div class="text-xs text-slate-500">${u.username} &bull; ${u.role} &bull; ${u.location}</div>
+      </div>
+      <button type="button" onclick="editAccountName('${u.username}')" class="text-xs bg-slate-200 hover:bg-slate-300 text-slate-700 px-2.5 py-1 rounded font-semibold transition"><i class="fa-solid fa-pen-to-square mr-1"></i>Edit Name</button>
+    `;
+    list.appendChild(div);
+  });
+
+  populateLocationSelector();
+}
+
+window.addEventListener("DOMContentLoaded", initializeApp);
+</script>
+</body>
+</html>
