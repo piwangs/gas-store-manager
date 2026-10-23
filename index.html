@@ -3,10 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>GAS GENERAL STORE MANAGER - Complete Store & Financial System</title>
+  <title>GAS GENERAL STORE MANAGER - Cloud Real-Time System</title>
   <!-- Tailwind CSS -->
-  <script src="https://cdn.tailwindcss.com"></script><!-- Supabase Cloud SDK -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
   <!-- FontAwesome Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <!-- Chart.js -->
@@ -29,7 +28,7 @@
   <style>
     @media print {
       #loginModal, header button, #managerLocationBox, #filtersPanel,
-      #itemModal, #userManagerModal, #auditModal, #reorderModal, .no-print { display:none !important; }
+      #itemModal, #userManagerModal, #editUserModal, #auditModal, #reorderModal, .no-print { display:none !important; }
       body { background:white !important; }
       main { max-width:none !important; padding:0 !important; }
       .shadow-sm { box-shadow:none !important; }
@@ -271,23 +270,61 @@
       <hr class="my-4">
 
       <!-- Active Accounts List -->
-      <h3 class="font-bold text-sm text-slate-800">Existing Accounts</h3>
+      <h3 class="font-bold text-sm text-slate-800">Existing Accounts & Privileges</h3>
       <div id="accountList" class="space-y-2 text-sm"></div>
       <button id="closeUsersBtn" type="button" class="w-full bg-slate-100 rounded-lg p-2 text-sm font-semibold mt-2">Close</button>
+    </div>
+  </div>
+
+  <!-- Edit User Privileges Modal -->
+  <div id="editUserModal" class="fixed inset-0 bg-slate-900/80 hidden items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl space-y-4">
+      <div class="flex justify-between items-center border-b pb-3">
+        <h3 class="font-bold text-base text-slate-800"><i class="fa-solid fa-user-pen text-purple-600 mr-2"></i>Edit User Privileges</h3>
+        <button id="closeEditUserX" type="button"><i class="fa-solid fa-xmark text-lg"></i></button>
+      </div>
+      <form id="editUserForm" class="space-y-3">
+        <input type="hidden" id="editUserId">
+        <div>
+          <label class="block text-xs font-semibold mb-1 text-slate-600">Username</label>
+          <input id="editUsernameDisplay" disabled class="w-full bg-slate-100 border rounded-lg px-3 py-2 text-xs font-mono text-slate-500">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold mb-1 text-slate-600">Full Name</label>
+          <input id="editUserFullName" required class="w-full border rounded-lg px-3 py-2 text-xs">
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block text-xs font-semibold mb-1 text-slate-600">Role / Privilege</label>
+            <select id="editUserRole" required class="w-full border rounded-lg px-3 py-2 text-xs font-semibold">
+              <option value="Storekeeper">Storekeeper</option>
+              <option value="Manager">Manager</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold mb-1 text-slate-600">Assigned Location</label>
+            <select id="editUserLocation" required class="w-full border rounded-lg px-3 py-2 text-xs font-semibold"></select>
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold mb-1 text-slate-600">New Password (leave blank to keep current)</label>
+          <input id="editUserPassword" type="password" placeholder="Min 8 characters if changing" class="w-full border rounded-lg px-3 py-2 text-xs">
+        </div>
+        <div class="flex justify-end gap-2 pt-2">
+          <button id="cancelEditUserBtn" type="button" class="bg-slate-100 hover:bg-slate-200 px-4 py-2 rounded-lg text-xs font-semibold">Cancel</button>
+          <button type="submit" class="bg-purple-600 hover:bg-purple-700 text-white px-5 py-2 rounded-lg text-xs font-semibold shadow-md">Save Changes</button>
+        </div>
+      </form>
     </div>
   </div>
 
 <script>
 "use strict";
 
-// ========================================================
-// SUPABASE CLOUD CONNECTION
-// ========================================================
 const SUPABASE_URL = "https://pxboxopyrcprdmpjucia.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB4Ym94b3B5cmNwcmRtcGp1Y2lhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI3MzYyNDEsImV4cCI6MjEwODMxMjI0MX0.rw8NCKG1JMPDbQyiIpjRYVSpNHaXn6R_hp_aJSocGpc"; // <-- PASTE YOUR ANON KEY HERE
 
 const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-// ========================================================
 
 const defaultCatalog = [
   {item_code:"001",description:"Sugar brown",category:"Dry Food Items",unit:"Kg",opening:100,added:0,issues:0,cost:1.20,price:1.80,comments:""},
@@ -367,6 +404,11 @@ function bindEvents() {
   $("closeReorderX").addEventListener("click", closeReorderModal);
   $("closeReorderBtn").addEventListener("click", closeReorderModal);
   $("copyReorderBtn").addEventListener("click", copyReorderText);
+
+  // Edit User Modal Bindings
+  $("editUserForm").addEventListener("submit", saveUserEdits);
+  $("closeEditUserX").addEventListener("click", closeEditUserModal);
+  $("cancelEditUserBtn").addEventListener("click", closeEditUserModal);
 }
 
 async function handleLogin(e) {
@@ -422,7 +464,7 @@ async function loadLocations() {
     });
     select.value = activeLocation;
     
-    // Also populate modal dropdown
+    // Populate creation modal location dropdown
     const userLocSelect = $("newUserLocation");
     if (userLocSelect) {
       userLocSelect.replaceChildren();
@@ -430,6 +472,21 @@ async function loadLocations() {
         const opt = document.createElement("option");
         opt.value = l.name; opt.textContent = l.name; userLocSelect.appendChild(opt);
       });
+    }
+
+    // Populate edit user modal location dropdown
+    const editUserLocSelect = $("editUserLocation");
+    if (editUserLocSelect) {
+      editUserLocSelect.replaceChildren();
+      data.forEach(l => {
+        const opt = document.createElement("option");
+        opt.value = l.name; opt.textContent = l.name; editUserLocSelect.appendChild(opt);
+      });
+      // Also add 'All Locations' option if managing managers
+      const optAll = document.createElement("option");
+      optAll.value = "All Locations";
+      optAll.textContent = "All Locations";
+      editUserLocSelect.appendChild(optAll);
     }
   }
 }
@@ -439,16 +496,13 @@ async function loadCloudData() {
   const date = dateKey();
   updateDayLabel();
 
-  // Fetch entries for location & date
   let { data, error } = await db.from('inventory_entries')
     .select('*')
     .eq('location', activeLocation)
     .eq('entry_date', date)
     .order('item_code', { ascending: true });
 
-  // If no entries exist for today, seed them from previous day or default catalog
   if (!data || data.length === 0) {
-    // Try fetching previous day
     const prevDate = new Date(date + "T12:00:00");
     prevDate.setDate(prevDate.getDate() - 1);
     const prevDateStr = localDateString(prevDate);
@@ -467,7 +521,7 @@ async function loadCloudData() {
         description: p.description,
         category: p.category,
         unit: p.unit,
-        opening: Number(p.opening) + Number(p.added) - Number(p.issues), // Closing becomes opening
+        opening: Number(p.opening) + Number(p.added) - Number(p.issues),
         added: 0,
         issues: 0,
         cost: p.cost,
@@ -632,11 +686,9 @@ async function saveItem(e) {
   };
 
   if (id) {
-    // Update existing
     await db.from('inventory_entries').update(itemData).eq('id', Number(id));
     await logAudit("Update Item", `Updated item ${itemData.description} at ${activeLocation}`);
   } else {
-    // Insert new
     itemData.location = activeLocation;
     itemData.entry_date = dateKey();
     await db.from('inventory_entries').insert([itemData]);
@@ -780,8 +832,11 @@ async function loadAccountsListModal() {
       const div = document.createElement("div");
       div.className = "flex justify-between items-center bg-slate-50 border p-2 rounded-lg text-xs";
       div.innerHTML = `
-        <div><b>${u.username}</b> (${u.name}) - <span class="text-brand-600">${u.role}</span> @ ${u.location}</div>
-        ${u.username !== 'admin' ? `<button onclick="toggleUser(${u.id}, ${u.disabled})" class="${u.disabled ? 'text-emerald-600' : 'text-rose-600'} font-bold hover:underline">${u.disabled ? 'Enable' : 'Disable'}</button>` : ''}
+        <div><b>${u.username}</b> (${u.name}) - <span class="text-brand-600">${u.role}</span> @ <span class="font-semibold">${u.location}</span></div>
+        <div class="flex items-center gap-2">
+          <button onclick="openEditUserModal(${u.id})" class="bg-purple-100 hover:bg-purple-200 text-purple-800 px-2 py-1 rounded font-bold"><i class="fa-solid fa-pen mr-1"></i>Edit</button>
+          ${u.username !== 'admin' ? `<button onclick="toggleUser(${u.id}, ${u.disabled})" class="${u.disabled ? 'text-emerald-600' : 'text-rose-600'} font-bold hover:underline">${u.disabled ? 'Enable' : 'Disable'}</button>` : ''}
+        </div>
       `;
       container.appendChild(div);
     });
@@ -814,6 +869,59 @@ async function createStorekeeper(e) {
 async function toggleUser(id, currentStatus) {
   await db.from('store_users').update({ disabled: !currentStatus }).eq('id', id);
   await loadAccountsListModal();
+}
+
+// Edit User Privileges Functions
+async function openEditUserModal(userId) {
+  const { data, error } = await db.from('store_users').select('*').eq('id', userId).single();
+  if (error || !data) {
+    alert("Could not load user details.");
+    return;
+  }
+
+  $("editUserId").value = data.id;
+  $("editUsernameDisplay").value = data.username;
+  $("editUserFullName").value = data.name;
+  $("editUserRole").value = data.role;
+  $("editUserLocation").value = data.location;
+  $("editUserPassword").value = "";
+
+  $("editUserModal").classList.remove("hidden");
+  $("editUserModal").classList.add("flex");
+}
+
+function closeEditUserModal() {
+  $("editUserModal").classList.add("hidden");
+  $("editUserModal").classList.remove("flex");
+}
+
+async function saveUserEdits(e) {
+  e.preventDefault();
+  const id = Number($("editUserId").value);
+  const name = $("editUserFullName").value.trim();
+  const role = $("editUserRole").value;
+  const location = $("editUserLocation").value;
+  const newPassword = $("editUserPassword").value.trim();
+
+  const updatePayload = { name, role, location };
+  if (newPassword) {
+    if (newPassword.length < 8) {
+      alert("Password must be at least 8 characters long.");
+      return;
+    }
+    updatePayload.password = newPassword;
+  }
+
+  const { error } = await db.from('store_users').update(updatePayload).eq('id', id);
+  if (error) {
+    alert("Error updating user privileges.");
+    return;
+  }
+
+  await logAudit("Update User", `Updated privileges for user ID ${id}: role=${role}, location=${location}`);
+  closeEditUserModal();
+  await loadAccountsListModal();
+  alert("User privileges updated successfully!");
 }
 
 // Audit Log Modal
@@ -877,7 +985,7 @@ function openReorderModal() {
     draftText += `All items are adequately stocked.\n`;
   }
 
-  $("reorderDraftText").value = draftText;
+  $("reorderDraftText").value = draftTest;
   $("reorderModal").classList.remove("hidden");
   $("reorderModal").classList.add("flex");
 }
