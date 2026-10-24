@@ -631,10 +631,12 @@ function openEditItemModal(id) {
   $("itemPrice").value = item.price;
   $("itemComments").value = item.comments || "";
 
+  // Disable master fields and opening stock for storekeepers
   $("itemId").disabled = !manager;
   $("itemDescription").disabled = !manager;
   $("itemCategory").disabled = !manager;
   $("itemSpec").disabled = !manager;
+  $("itemOpening").disabled = !manager; // Locked for storekeepers
   $("itemCost").disabled = !manager;
   $("itemPrice").disabled = !manager;
 
@@ -661,6 +663,7 @@ function openNewItemModal() {
   $("itemDescription").disabled = false;
   $("itemCategory").disabled = false;
   $("itemSpec").disabled = false;
+  $("itemOpening").disabled = false;
   $("itemCost").disabled = false;
   $("itemPrice").disabled = false;
 
@@ -694,6 +697,7 @@ async function saveItem(e) {
       updated_at: new Date().toISOString()
     };
   } else {
+    // Storekeepers can only update added, issues, and comments (opening stock remains locked)
     itemData = {
       added: Number($("itemAdded").value) || 0,
       issues: Number($("itemIssues").value) || 0,
