@@ -175,7 +175,7 @@
       <form id="itemForm" class="p-6 space-y-4">
         <input type="hidden" id="editIndex" value="">
         <div class="grid grid-cols-3 gap-3">
-          <div><label class="block text-xs font-semibold mb-1 text-slate-600">Item ID</label><input id="itemId" class="w-full border rounded-lg px-3 py-2 text-xs" placeholder="Auto"></div>
+          <div><label class="block text-xs font-semibold mb-1 text-slate-600">Item ID</label><input id="itemId" required class="w-full border rounded-lg px-3 py-2 text-xs" placeholder="001"></div>
           <div class="col-span-2"><label class="block text-xs font-semibold mb-1 text-slate-600">Item Description</label><input id="itemDescription" required maxlength="120" class="w-full border rounded-lg px-3 py-2 text-xs"></div>
         </div>
         <div class="grid grid-cols-2 gap-3">
@@ -321,15 +321,15 @@ const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 const defaultCatalog = [
-  {item_code:"001",description:"Sugar brown",category:"Dry Food Items",unit:"Kg",opening:100,added:0,issues:0,cost:1.20,price:1.80,comments:""},
-  {item_code:"002",description:"Sugar white",category:"Dry Food Items",unit:"Kg",opening:50,added:0,issues:0,cost:1.10,price:1.60,comments:""},
-  {item_code:"003",description:"Beans",category:"Dry Food Items",unit:"Kg",opening:75,added:0,issues:0,cost:1.50,price:2.20,comments:""},
-  {item_code:"004",description:"Posho",category:"Dry Food Items",unit:"Kg",opening:100,added:0,issues:0,cost:0.80,price:1.20,comments:""},
-  {item_code:"005",description:"Tusker lager can",category:"Alcoholic",unit:"Can",opening:1440,added:0,issues:0,cost:1.50,price:2.50,comments:""},
-  {item_code:"006",description:"Juice mix",category:"Soft Drinks",unit:"Pkt",opening:600,added:0,issues:0,cost:0.50,price:1.00,comments:""},
-  {item_code:"007",description:"Water big size",category:"Soft Drinks",unit:"Bottle",opening:864,added:0,issues:0,cost:0.40,price:0.80,comments:""},
-  {item_code:"008",description:"Chicken (whole)",category:"Frozen",unit:"Pc",opening:92,added:0,issues:0,cost:5.00,price:8.00,comments:""},
-  {item_code:"009",description:"Chicken Eggs",category:"Fresh Food Items",unit:"Tray",opening:40,added:0,issues:0,cost:3.50,price:5.00,comments:""}
+  {item_code:"001",description:"Sugar brown",category:"Dry Food Items",unit:"Kg",cost:1.20,price:1.80},
+  {item_code:"002",description:"Sugar white",category:"Dry Food Items",unit:"Kg",cost:1.10,price:1.60},
+  {item_code:"003",description:"Beans",category:"Dry Food Items",unit:"Kg",cost:1.50,price:2.20},
+  {item_code:"004",description:"Posho",category:"Dry Food Items",unit:"Kg",cost:0.80,price:1.20},
+  {item_code:"005",description:"Tusker lager can",category:"Alcoholic",unit:"Can",cost:1.50,price:2.50},
+  {item_code:"006",description:"Juice mix",category:"Soft Drinks",unit:"Pkt",cost:0.50,price:1.00},
+  {item_code:"007",description:"Water big size",category:"Soft Drinks",unit:"Bottle",cost:0.40,price:0.80},
+  {item_code:"008",description:"Chicken (whole)",category:"Frozen",unit:"Pc",cost:5.00,price:8.00},
+  {item_code:"009",description:"Chicken Eggs",category:"Fresh Food Items",unit:"Tray",cost:3.50,price:5.00}
 ];
 
 let currentUser = null;
@@ -522,7 +522,11 @@ async function loadCloudData() {
       baseItems = defaultCatalog.map(item => ({
         location: activeLocation,
         entry_date: date,
-        ...item
+        ...item,
+        opening: 100,
+        added: 0,
+        issues: 0,
+        comments: ""
       }));
     }
 
@@ -631,8 +635,8 @@ function openEditItemModal(id) {
   $("itemPrice").value = item.price;
   $("itemComments").value = item.comments || "";
 
-  // Disable master fields and opening stock for storekeepers
-  $("itemId").disabled = !manager;
+  // Restrict fields for storekeepers
+  $("itemId").disabled = true;
   $("itemDescription").disabled = !manager;
   $("itemCategory").disabled = !manager;
   $("itemSpec").disabled = !manager;
@@ -646,7 +650,7 @@ function openEditItemModal(id) {
 
 function openNewItemModal() {
   if (!isManager()) return;
-  $("modalTitle").textContent = "Add Inventory Item";
+  $("modalTitle").textContent = "Add Inventory Item (Syncs to All Locations)";
   $("editIndex").value = "";
   $("itemId").value = String(currentItems.length + 1).padStart(3, '0');
   $("itemDescription").value = "";
@@ -678,13 +682,44 @@ function closeItemModal() {
 
 async function saveItem(e) {
   e.preventDefault();
-  const id = $("editIndex").value;
+  const entryId = Number($("editIndex").value);
   const manager = isManager();
+  const itemCode = $("itemId").value.trim();
 
-  let itemData = {};
   if (manager) {
-    itemData = {
-      item_code: $("itemId").value.trim(),
+    // SYNC MASTER DETAILS ACROSS ALL LOCATIONS & DATES FOR THIS ITEM CODE
+    const masterUpdates = {
+      description: $("itemDescription").value.trim(),
+      category: $("itemCategory").value,
+      unit: $("itemSpec").value.trim(),
+      cost: Number($("itemCost").value) || 0,
+      price: Number($("itemPrice").value) || 0,
+      updated_at: new Date().toISOString()
+    };
+    await db.from('inventory_entries')
+      .update(masterUpdates)
+      .eq('item_code', itemCode);
+  }
+
+  // UPDATE LOCATION/DATE DAILY LOGS
+  const dailyUpdates = {
+    added: Number($("itemAdded").value) || 0,
+    issues: Number($("itemIssues").value) || 0,
+    comments: $("itemComments").value.trim(),
+    updated_at: new Date().toISOString()
+  };
+  if (manager) {
+    dailyUpdates.opening = Number($("itemOpening").value) || 0;
+  }
+
+  if (entryId) {
+    await db.from('inventory_entries').update(dailyUpdates).eq('id', entryId);
+    await logAudit(manager ? "Update Item" : "Log Stock", `Updated entry for item ${itemCode} at ${activeLocation}`);
+  } else if (manager) {
+    const newEntry = {
+      location: activeLocation,
+      entry_date: dateKey(),
+      item_code: itemCode,
       description: $("itemDescription").value.trim(),
       category: $("itemCategory").value,
       unit: $("itemSpec").value.trim(),
@@ -693,27 +728,10 @@ async function saveItem(e) {
       issues: Number($("itemIssues").value) || 0,
       cost: Number($("itemCost").value) || 0,
       price: Number($("itemPrice").value) || 0,
-      comments: $("itemComments").value.trim(),
-      updated_at: new Date().toISOString()
+      comments: $("itemComments").value.trim()
     };
-  } else {
-    // Storekeepers can only update added, issues, and comments (opening stock remains locked)
-    itemData = {
-      added: Number($("itemAdded").value) || 0,
-      issues: Number($("itemIssues").value) || 0,
-      comments: $("itemComments").value.trim(),
-      updated_at: new Date().toISOString()
-    };
-  }
-
-  if (id) {
-    await db.from('inventory_entries').update(itemData).eq('id', Number(id));
-    await logAudit(manager ? "Update Item" : "Log Stock", `Updated stock log for item ID ${id} at ${activeLocation}`);
-  } else if (manager) {
-    itemData.location = activeLocation;
-    itemData.entry_date = dateKey();
-    await db.from('inventory_entries').insert([itemData]);
-    await logAudit("Add Item", `Added new item ${itemData.description} at ${activeLocation}`);
+    await db.from('inventory_entries').insert([newEntry]);
+    await logAudit("Add Item", `Added new item ${itemCode} at ${activeLocation}`);
   }
 
   closeItemModal();
