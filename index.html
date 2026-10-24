@@ -173,9 +173,9 @@
         <button id="closeItemX" type="button" class="text-slate-300 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
       </div>
       <form id="itemForm" class="p-6 space-y-4">
-        <input type="hidden" id="editEntryId" value="">
+        <input type="hidden" id="editIndex" value="">
         <div class="grid grid-cols-3 gap-3">
-          <div><label class="block text-xs font-semibold mb-1 text-slate-600">Item ID</label><input id="itemId" required class="w-full border rounded-lg px-3 py-2 text-xs" placeholder="001"></div>
+          <div><label class="block text-xs font-semibold mb-1 text-slate-600">Item ID</label><input id="itemId" class="w-full border rounded-lg px-3 py-2 text-xs" placeholder="Auto"></div>
           <div class="col-span-2"><label class="block text-xs font-semibold mb-1 text-slate-600">Item Description</label><input id="itemDescription" required maxlength="120" class="w-full border rounded-lg px-3 py-2 text-xs"></div>
         </div>
         <div class="grid grid-cols-2 gap-3">
@@ -321,15 +321,15 @@ const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 const defaultCatalog = [
-  {item_code:"001",description:"Sugar brown",category:"Dry Food Items",unit:"Kg",cost:1.20,price:1.80},
-  {item_code:"002",description:"Sugar white",category:"Dry Food Items",unit:"Kg",cost:1.10,price:1.60},
-  {item_code:"003",description:"Beans",category:"Dry Food Items",unit:"Kg",cost:1.50,price:2.20},
-  {item_code:"004",description:"Posho",category:"Dry Food Items",unit:"Kg",cost:0.80,price:1.20},
-  {item_code:"005",description:"Tusker lager can",category:"Alcoholic",unit:"Can",cost:1.50,price:2.50},
-  {item_code:"006",description:"Juice mix",category:"Soft Drinks",unit:"Pkt",cost:0.50,price:1.00},
-  {item_code:"007",description:"Water big size",category:"Soft Drinks",unit:"Bottle",cost:0.40,price:0.80},
-  {item_code:"008",description:"Chicken (whole)",category:"Frozen",unit:"Pc",cost:5.00,price:8.00},
-  {item_code:"009",description:"Chicken Eggs",category:"Fresh Food Items",unit:"Tray",cost:3.50,price:5.00}
+  {item_code:"001",description:"Sugar brown",category:"Dry Food Items",unit:"Kg",opening:100,added:0,issues:0,cost:1.20,price:1.80,comments:""},
+  {item_code:"002",description:"Sugar white",category:"Dry Food Items",unit:"Kg",opening:50,added:0,issues:0,cost:1.10,price:1.60,comments:""},
+  {item_code:"003",description:"Beans",category:"Dry Food Items",unit:"Kg",opening:75,added:0,issues:0,cost:1.50,price:2.20,comments:""},
+  {item_code:"004",description:"Posho",category:"Dry Food Items",unit:"Kg",opening:100,added:0,issues:0,cost:0.80,price:1.20,comments:""},
+  {item_code:"005",description:"Tusker lager can",category:"Alcoholic",unit:"Can",opening:1440,added:0,issues:0,cost:1.50,price:2.50,comments:""},
+  {item_code:"006",description:"Juice mix",category:"Soft Drinks",unit:"Pkt",opening:600,added:0,issues:0,cost:0.50,price:1.00,comments:""},
+  {item_code:"007",description:"Water big size",category:"Soft Drinks",unit:"Bottle",opening:864,added:0,issues:0,cost:0.40,price:0.80,comments:""},
+  {item_code:"008",description:"Chicken (whole)",category:"Frozen",unit:"Pc",opening:92,added:0,issues:0,cost:5.00,price:8.00,comments:""},
+  {item_code:"009",description:"Chicken Eggs",category:"Fresh Food Items",unit:"Tray",opening:40,added:0,issues:0,cost:3.50,price:5.00,comments:""}
 ];
 
 let currentUser = null;
@@ -481,32 +481,18 @@ async function loadLocations() {
   }
 }
 
-async function ensureMasterCatalog() {
-  let { data: masterItems } = await db.from('master_items').select('*');
-  if (!masterItems || masterItems.length === 0) {
-    await db.from('master_items').insert(defaultCatalog);
-    const { data: seeded } = await db.from('master_items').select('*');
-    return seeded || defaultCatalog;
-  }
-  return masterItems;
-}
-
 async function loadCloudData() {
   if (!currentUser) return;
   const date = dateKey();
   updateDayLabel();
 
-  // 1. Get centralized master catalog (synced across all locations)
-  const masterItems = await ensureMasterCatalog();
-
-  // 2. Get daily entries for this specific location & date
-  let { data: dailyEntries } = await db.from('inventory_entries')
+  let { data, error } = await db.from('inventory_entries')
     .select('*')
     .eq('location', activeLocation)
-    .eq('entry_date', date);
+    .eq('entry_date', date)
+    .order('item_code', { ascending: true });
 
-  // If daily entries do not exist for today, initialize them from yesterday or default opening stock
-  if (!dailyEntries || dailyEntries.length === 0) {
+  if (!data || data.length === 0) {
     const prevDate = new Date(date + "T12:00:00");
     prevDate.setDate(prevDate.getDate() - 1);
     const prevDateStr = localDateString(prevDate);
@@ -516,73 +502,42 @@ async function loadCloudData() {
       .eq('location', activeLocation)
       .eq('entry_date', prevDateStr);
 
-    const newEntries = masterItems.map(m => {
-      let openingVal = 100;
-      if (prevData && prevData.length > 0) {
-        const prev = prevData.find(p => p.item_code === m.item_code);
-        if (prev) {
-          openingVal = Number(prev.opening) + Number(prev.added) - Number(prev.issues);
-        }
-      }
-      return {
+    let baseItems = [];
+    if (prevData && prevData.length > 0) {
+      baseItems = prevData.map(p => ({
         location: activeLocation,
         entry_date: date,
-        item_code: m.item_code,
-        opening: openingVal,
+        item_code: p.item_code,
+        description: p.description,
+        category: p.category,
+        unit: p.unit,
+        opening: Number(p.opening) + Number(p.added) - Number(p.issues),
         added: 0,
         issues: 0,
-        comments: ""
-      };
-    });
-
-    await db.from('inventory_entries').insert(newEntries);
-
-    const { data: refetched } = await db.from('inventory_entries')
-      .select('*')
-      .eq('location', activeLocation)
-      .eq('entry_date', date);
-    
-    dailyEntries = refetched || [];
-  } else {
-    // Ensure any newly added master items appear in today's location log
-    const existingCodes = new Set(dailyEntries.map(e => e.item_code));
-    const missingMaster = masterItems.filter(m => !existingCodes.has(m.item_code));
-    if (missingMaster.length > 0) {
-      const extraEntries = missingMaster.map(m => ({
-        location: activeLocation,
-        entry_date: date,
-        item_code: m.item_code,
-        opening: 0,
-        added: 0,
-        issues: 0,
+        cost: p.cost,
+        price: p.price,
         comments: ""
       }));
-      await db.from('inventory_entries').insert(extraEntries);
-      const { data: refetched2 } = await db.from('inventory_entries')
-        .select('*')
-        .eq('location', activeLocation)
-        .eq('entry_date', date);
-      dailyEntries = refetched2 || dailyEntries;
+    } else {
+      baseItems = defaultCatalog.map(item => ({
+        location: activeLocation,
+        entry_date: date,
+        ...item
+      }));
     }
-  }
 
-  // 3. Merge Master Catalog details with Location Daily Entries
-  currentItems = dailyEntries.map(entry => {
-    const master = masterItems.find(m => m.item_code === entry.item_code) || {};
-    return {
-      id: entry.id,
-      item_code: entry.item_code,
-      description: master.description || "Unknown Item",
-      category: master.category || "General",
-      unit: master.unit || "Unit",
-      opening: Number(entry.opening) || 0,
-      added: Number(entry.added) || 0,
-      issues: Number(entry.issues) || 0,
-      cost: Number(master.cost) || 0,
-      price: Number(master.price) || 0,
-      comments: entry.comments || ""
-    };
-  }).sort((a, b) => a.item_code.localeCompare(b.item_code));
+    await db.from('inventory_entries').insert(baseItems);
+
+    const { data: newData } = await db.from('inventory_entries')
+      .select('*')
+      .eq('location', activeLocation)
+      .eq('entry_date', date)
+      .order('item_code', { ascending: true });
+    
+    currentItems = newData || [];
+  } else {
+    currentItems = data;
+  }
 
   renderTable();
   updateKPIs();
@@ -664,7 +619,7 @@ function openEditItemModal(id) {
 
   const manager = isManager();
   $("modalTitle").textContent = manager ? `Edit Item: ${item.description}` : `Log Stock for: ${item.description}`;
-  $("editEntryId").value = item.id;
+  $("editIndex").value = item.id;
   $("itemId").value = item.item_code;
   $("itemDescription").value = item.description;
   $("itemCategory").value = item.category;
@@ -676,8 +631,8 @@ function openEditItemModal(id) {
   $("itemPrice").value = item.price;
   $("itemComments").value = item.comments || "";
 
-  // Restrict fields for storekeepers
-  $("itemId").disabled = true;
+  // Disable master fields and opening stock for storekeepers
+  $("itemId").disabled = !manager;
   $("itemDescription").disabled = !manager;
   $("itemCategory").disabled = !manager;
   $("itemSpec").disabled = !manager;
@@ -691,8 +646,8 @@ function openEditItemModal(id) {
 
 function openNewItemModal() {
   if (!isManager()) return;
-  $("modalTitle").textContent = "Add Inventory Item (Syncs Globally)";
-  $("editEntryId").value = "";
+  $("modalTitle").textContent = "Add Inventory Item";
+  $("editIndex").value = "";
   $("itemId").value = String(currentItems.length + 1).padStart(3, '0');
   $("itemDescription").value = "";
   $("itemCategory").value = "Dry Food Items";
@@ -723,49 +678,42 @@ function closeItemModal() {
 
 async function saveItem(e) {
   e.preventDefault();
-  const entryId = Number($("editEntryId").value);
+  const id = $("editIndex").value;
   const manager = isManager();
-  const itemCode = $("itemId").value.trim();
 
+  let itemData = {};
   if (manager) {
-    // 1. Sync master item details globally across all locations
-    await db.from('master_items').upsert([{
-      item_code: itemCode,
+    itemData = {
+      item_code: $("itemId").value.trim(),
       description: $("itemDescription").value.trim(),
       category: $("itemCategory").value,
       unit: $("itemSpec").value.trim(),
-      cost: Number($("itemCost").value) || 0,
-      price: Number($("itemPrice").value) || 0,
-      updated_at: new Date().toISOString()
-    }]);
-  }
-
-  // 2. Update daily inventory entry quantities and comments
-  const dailyUpdates = {
-    added: Number($("itemAdded").value) || 0,
-    issues: Number($("itemIssues").value) || 0,
-    comments: $("itemComments").value.trim(),
-    updated_at: new Date().toISOString()
-  };
-  if (manager) {
-    dailyUpdates.opening = Number($("itemOpening").value) || 0;
-  }
-
-  if (entryId) {
-    await db.from('inventory_entries').update(dailyUpdates).eq('id', entryId);
-    await logAudit(manager ? "Update Item" : "Log Stock", `Updated stock log for item ${itemCode} at ${activeLocation}`);
-  } else if (manager) {
-    const newEntry = {
-      location: activeLocation,
-      entry_date: dateKey(),
-      item_code: itemCode,
       opening: Number($("itemOpening").value) || 0,
       added: Number($("itemAdded").value) || 0,
       issues: Number($("itemIssues").value) || 0,
-      comments: $("itemComments").value.trim()
+      cost: Number($("itemCost").value) || 0,
+      price: Number($("itemPrice").value) || 0,
+      comments: $("itemComments").value.trim(),
+      updated_at: new Date().toISOString()
     };
-    await db.from('inventory_entries').insert([newEntry]);
-    await logAudit("Add Item", `Added new master item ${itemCode} at ${activeLocation}`);
+  } else {
+    // Storekeepers can only update added, issues, and comments (opening stock remains locked)
+    itemData = {
+      added: Number($("itemAdded").value) || 0,
+      issues: Number($("itemIssues").value) || 0,
+      comments: $("itemComments").value.trim(),
+      updated_at: new Date().toISOString()
+    };
+  }
+
+  if (id) {
+    await db.from('inventory_entries').update(itemData).eq('id', Number(id));
+    await logAudit(manager ? "Update Item" : "Log Stock", `Updated stock log for item ID ${id} at ${activeLocation}`);
+  } else if (manager) {
+    itemData.location = activeLocation;
+    itemData.entry_date = dateKey();
+    await db.from('inventory_entries').insert([itemData]);
+    await logAudit("Add Item", `Added new item ${itemData.description} at ${activeLocation}`);
   }
 
   closeItemModal();
