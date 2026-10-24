@@ -12,8 +12,6 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <!-- Supabase Cloud SDK -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <!-- SheetJS (XLSX) for Excel Export & Import -->
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script>
     tailwind.config = { 
       theme: { 
@@ -38,9 +36,6 @@
   </style>
 </head>
 <body class="bg-slate-100 text-slate-800 font-sans min-h-screen flex flex-col">
-
-  <!-- Hidden Excel File Input -->
-  <input type="file" id="excelFileInput" accept=".xlsx, .xls, .csv" class="hidden">
 
   <!-- Login Modal -->
   <div id="loginModal" class="fixed inset-0 bg-slate-900/90 z-50 flex items-center justify-center p-4">
@@ -84,8 +79,6 @@
           <span id="displayUserName" class="font-semibold text-white">Signed out</span>
           <button id="logoutBtn" type="button" class="text-slate-400 hover:text-rose-400 ml-1 transition" title="Logout"><i class="fa-solid fa-right-from-bracket"></i></button>
         </div>
-        <button id="downloadTemplateBtn" type="button" class="bg-emerald-700 hover:bg-emerald-800 text-white px-3 py-2 rounded-lg text-xs font-semibold shadow-md transition"><i class="fa-solid fa-file-excel mr-1"></i>Excel Template</button>
-        <button id="uploadExcelBtn" type="button" class="hidden bg-teal-600 hover:bg-teal-700 text-white px-3 py-2 rounded-lg text-xs font-semibold shadow-md transition"><i class="fa-solid fa-file-arrow-up mr-1"></i>Upload Excel</button>
         <button id="reorderBtn" type="button" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-2 rounded-lg text-xs font-semibold border border-slate-700 transition"><i class="fa-solid fa-cart-flatbed text-amber-400 mr-1"></i>Reorder List</button>
         <button id="auditBtn" type="button" class="hidden bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-2 rounded-lg text-xs font-semibold border border-slate-700 transition"><i class="fa-solid fa-clock-rotate-left text-brand-400 mr-1"></i>Audit Log</button>
         <button id="manageUsersBtn" type="button" class="hidden bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-lg text-xs font-semibold shadow-md transition"><i class="fa-solid fa-users-gear mr-1"></i>Stores & Accounts</button>
@@ -180,9 +173,9 @@
         <button id="closeItemX" type="button" class="text-slate-300 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
       </div>
       <form id="itemForm" class="p-6 space-y-4">
-        <input type="hidden" id="editEntryId" value="">
+        <input type="hidden" id="editIndex" value="">
         <div class="grid grid-cols-3 gap-3">
-          <div><label class="block text-xs font-semibold mb-1 text-slate-600">Item ID</label><input id="itemId" required class="w-full border rounded-lg px-3 py-2 text-xs" placeholder="001"></div>
+          <div><label class="block text-xs font-semibold mb-1 text-slate-600">Item ID</label><input id="itemId" readonly class="w-full bg-slate-100 border rounded-lg px-3 py-2 text-xs font-mono" placeholder="Auto"></div>
           <div class="col-span-2"><label class="block text-xs font-semibold mb-1 text-slate-600">Item Description</label><input id="itemDescription" required maxlength="120" class="w-full border rounded-lg px-3 py-2 text-xs"></div>
         </div>
         <div class="grid grid-cols-2 gap-3">
@@ -328,15 +321,15 @@ const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 const defaultCatalog = [
-  {item_code:"001",description:"Sugar brown",category:"Dry Food Items",unit:"Kg",cost:1.20,price:1.80},
-  {item_code:"002",description:"Sugar white",category:"Dry Food Items",unit:"Kg",cost:1.10,price:1.60},
-  {item_code:"003",description:"Beans",category:"Dry Food Items",unit:"Kg",cost:1.50,price:2.20},
-  {item_code:"004",description:"Posho",category:"Dry Food Items",unit:"Kg",cost:0.80,price:1.20},
-  {item_code:"005",description:"Tusker lager can",category:"Alcoholic",unit:"Can",cost:1.50,price:2.50},
-  {item_code:"006",description:"Juice mix",category:"Soft Drinks",unit:"Pkt",cost:0.50,price:1.00},
-  {item_code:"007",description:"Water big size",category:"Soft Drinks",unit:"Bottle",cost:0.40,price:0.80},
-  {item_code:"008",description:"Chicken (whole)",category:"Frozen",unit:"Pc",cost:5.00,price:8.00},
-  {item_code:"009",description:"Chicken Eggs",category:"Fresh Food Items",unit:"Tray",cost:3.50,price:5.00}
+  {item_code:"001",description:"Sugar brown",category:"Dry Food Items",unit:"Kg",opening:100,added:0,issues:0,cost:1.20,price:1.80,comments:""},
+  {item_code:"002",description:"Sugar white",category:"Dry Food Items",unit:"Kg",opening:50,added:0,issues:0,cost:1.10,price:1.60,comments:""},
+  {item_code:"003",description:"Beans",category:"Dry Food Items",unit:"Kg",opening:75,added:0,issues:0,cost:1.50,price:2.20,comments:""},
+  {item_code:"004",description:"Posho",category:"Dry Food Items",unit:"Kg",opening:100,added:0,issues:0,cost:0.80,price:1.20,comments:""},
+  {item_code:"005",description:"Tusker lager can",category:"Alcoholic",unit:"Can",opening:1440,added:0,issues:0,cost:1.50,price:2.50,comments:""},
+  {item_code:"006",description:"Juice mix",category:"Soft Drinks",unit:"Pkt",opening:600,added:0,issues:0,cost:0.50,price:1.00,comments:""},
+  {item_code:"007",description:"Water big size",category:"Soft Drinks",unit:"Bottle",opening:864,added:0,issues:0,cost:0.40,price:0.80,comments:""},
+  {item_code:"008",description:"Chicken (whole)",category:"Frozen",unit:"Pc",opening:92,added:0,issues:0,cost:5.00,price:8.00,comments:""},
+  {item_code:"009",description:"Chicken Eggs",category:"Fresh Food Items",unit:"Tray",opening:40,added:0,issues:0,cost:3.50,price:5.00,comments:""}
 ];
 
 let currentUser = null;
@@ -382,9 +375,6 @@ function bindEvents() {
   $("auditBtn").addEventListener("click", openAuditModal);
   $("reorderBtn").addEventListener("click", openReorderModal);
   $("exportBtn").addEventListener("click", exportCSV);
-  $("downloadTemplateBtn").addEventListener("click", downloadExcelTemplate);
-  $("uploadExcelBtn").addEventListener("click", () => $("excelFileInput").click());
-  $("excelFileInput").addEventListener("change", handleExcelUpload);
   $("printBtn").addEventListener("click", () => window.print());
   $("newItemBtn").addEventListener("click", openNewItemModal);
   $("selectedDate").addEventListener("change", loadCloudData);
@@ -442,7 +432,6 @@ async function handleLogin(e) {
     $("manageUsersBtn").classList.remove("hidden");
     $("auditBtn").classList.remove("hidden");
     $("newItemBtn").classList.remove("hidden");
-    $("uploadExcelBtn").classList.remove("hidden");
     await loadLocations();
   } else {
     activeLocation = currentUser.location;
@@ -450,7 +439,6 @@ async function handleLogin(e) {
     $("manageUsersBtn").classList.add("hidden");
     $("auditBtn").classList.add("hidden");
     $("newItemBtn").classList.add("hidden");
-    $("uploadExcelBtn").classList.add("hidden");
   }
 
   $("locationBadge").textContent = activeLocation;
@@ -493,32 +481,40 @@ async function loadLocations() {
   }
 }
 
-async function ensureMasterCatalog() {
-  let { data: masterItems } = await db.from('master_items').select('*');
-  if (!masterItems || masterItems.length === 0) {
-    await db.from('master_items').insert(defaultCatalog);
-    const { data: seeded } = await db.from('master_items').select('*');
-    return seeded || defaultCatalog;
-  }
-  return masterItems;
-}
-
 async function loadCloudData() {
   if (!currentUser) return;
   const date = dateKey();
   updateDayLabel();
 
-  // 1. Get centralized master items (shared globally across all locations)
-  const masterItems = await ensureMasterCatalog();
-  const masterMap = new Map(masterItems.map(m => [m.item_code, m]));
+  // 1. Fetch all distinct master definitions globally for sync & fallbacks
+  let { data: allEntries } = await db.from('inventory_entries').select('item_code, description, category, unit, cost, price');
+  let masterMap = new Map();
+  if (allEntries && allEntries.length > 0) {
+    allEntries.forEach(e => {
+      if (!masterMap.has(e.item_code)) {
+        masterMap.set(e.item_code, {
+          description: e.description,
+          category: e.category,
+          unit: e.unit,
+          cost: Number(e.cost) || 0,
+          price: Number(e.price) || 0
+        });
+      }
+    });
+  }
 
-  // 2. Get daily entries for this specific location & date ONLY
+  if (masterMap.size === 0) {
+    defaultCatalog.forEach(d => masterMap.set(d.item_code, d));
+  }
+
+  // 2. Fetch current location & date entries strictly isolated
   let { data: dailyEntries } = await db.from('inventory_entries')
     .select('*')
     .eq('location', activeLocation)
-    .eq('entry_date', date);
+    .eq('entry_date', date)
+    .order('item_code', { ascending: true });
 
-  // If daily entries do not exist for today, initialize them from yesterday or default opening stock
+  // 3. Initialize if today's log doesn't exist for this location
   if (!dailyEntries || dailyEntries.length === 0) {
     const prevDate = new Date(date + "T12:00:00");
     prevDate.setDate(prevDate.getDate() - 1);
@@ -529,73 +525,91 @@ async function loadCloudData() {
       .eq('location', activeLocation)
       .eq('entry_date', prevDateStr);
 
-    const newEntries = masterItems.map(m => {
-      let openingVal = 100;
+    let baseItems = [];
+    masterMap.forEach((m, code) => {
+      let openingVal = m.opening !== undefined ? m.opening : 0;
       if (prevData && prevData.length > 0) {
-        const prev = prevData.find(p => p.item_code === m.item_code);
+        const prev = prevData.find(p => p.item_code === code);
         if (prev) {
           openingVal = Number(prev.opening) + Number(prev.added) - Number(prev.issues);
         }
       }
-      return {
+      baseItems.push({
         location: activeLocation,
         entry_date: date,
-        item_code: m.item_code,
+        item_code: code,
+        description: m.description,
+        category: m.category,
+        unit: m.unit,
         opening: openingVal,
         added: 0,
         issues: 0,
+        cost: m.cost,
+        price: m.price,
         comments: ""
-      };
+      });
     });
 
-    await db.from('inventory_entries').insert(newEntries);
+    await db.from('inventory_entries').insert(baseItems);
 
-    const { data: refetched } = await db.from('inventory_entries')
+    const { data: newData } = await db.from('inventory_entries')
       .select('*')
       .eq('location', activeLocation)
-      .eq('entry_date', date);
+      .eq('entry_date', date)
+      .order('item_code', { ascending: true });
     
-    dailyEntries = refetched || [];
+    dailyEntries = newData || [];
   } else {
-    // Ensure any newly created master items appear in today's location log
+    // Ensure any newly added global items appear in today's location log
     const existingCodes = new Set(dailyEntries.map(e => e.item_code));
-    const missingMaster = masterItems.filter(m => !existingCodes.has(m.item_code));
-    if (missingMaster.length > 0) {
-      const extraEntries = missingMaster.map(m => ({
-        location: activeLocation,
-        entry_date: date,
-        item_code: m.item_code,
-        opening: 0,
-        added: 0,
-        issues: 0,
-        comments: ""
-      }));
-      await db.from('inventory_entries').insert(extraEntries);
-      const { data: refetched2 } = await db.from('inventory_entries')
+    let missingInserts = [];
+    masterMap.forEach((m, code) => {
+      if (!existingCodes.has(code)) {
+        missingInserts.push({
+          location: activeLocation,
+          entry_date: date,
+          item_code: code,
+          description: m.description,
+          category: m.category,
+          unit: m.unit,
+          opening: 0,
+          added: 0,
+          issues: 0,
+          cost: m.cost,
+          price: m.price,
+          comments: ""
+        });
+      }
+    });
+
+    if (missingInserts.length > 0) {
+      await db.from('inventory_entries').insert(missingInserts);
+      const { data: refetched } = await db.from('inventory_entries')
         .select('*')
         .eq('location', activeLocation)
-        .eq('entry_date', date);
-      dailyEntries = refetched2 || dailyEntries;
+        .eq('entry_date', date)
+        .order('item_code', { ascending: true });
+      dailyEntries = refetched || dailyEntries;
     }
   }
 
-  // 3. Merge Master Catalog details with Location Daily Entries
-  currentItems = dailyEntries.map(entry => {
-    const master = masterMap.get(entry.item_code) || {};
+  // 4. Map items ensuring zero "Unknown Item" occurrences
+  currentItems = (dailyEntries || []).map(item => {
+    const master = masterMap.get(item.item_code) || {};
     return {
-      id: entry.id,
-      item_code: entry.item_code,
-      description: master.description || "Unknown Item",
-      category: master.category || "General",
-      unit: master.unit || "Unit",
-      opening: Number(entry.opening) || 0,
-      added: Number(entry.added) || 0,
-      issues: Number(entry.issues) || 0,
-      cost: Number(master.cost) || 0,
-      price: Number(master.price) || 0,
-      comments: entry.comments || ""
+      id: item.id,
+      item_code: item.item_code,
+      description: item.description || master.description || "General Item",
+      category: item.category || master.category || "Dry Food Items",
+      unit: item.unit || master.unit || "Pcs",
+      opening: Number(item.opening) || 0,
+      added: Number(item.added) || 0,
+      issues: Number(item.issues) || 0,
+      cost: Number(item.cost) || master.cost || 0,
+      price: Number(item.price) || master.price || 0,
+      comments: item.comments || ""
     };
-  }).sort((a, b) => a.item_code.localeCompare(b.item_code));
+  });
 
   renderTable();
   updateKPIs();
@@ -671,84 +685,15 @@ function updateKPIs() {
   $("statLowStock").textContent = lowStock;
 }
 
-// Download Excel Master Template (.xlsx)
-function downloadExcelTemplate() {
-  const templateData = [
-    { "Item Code": "010", "Description": "Cooking Oil 5L", "Category": "Dry Food Items", "Unit": "Bottle", "Unit Cost": 8.50, "Selling Price": 12.00 },
-    { "Item Code": "011", "Description": "Wheat Flour 10kg", "Category": "Dry Food Items", "Unit": "Bag", "Unit Cost": 10.00, "Selling Price": 14.50 },
-    { "Item Code": "012", "Description": "Soda Coca-Cola Can", "Category": "Soft Drinks", "Unit": "Can", "Unit Cost": 0.60, "Selling Price": 1.20 }
-  ];
-
-  const worksheet = XLSX.utils.json_to_sheet(templateData);
-  const workbook = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook, worksheet, "Master Items");
-
-  worksheet["!cols"] = [{ wch: 12 }, { wch: 25 }, { wch: 20 }, { wch: 10 }, { wch: 12 }, { wch: 14 }];
-  XLSX.writeFile(workbook, "GAS_Master_Catalog_Template.xlsx");
-}
-
-// Upload Excel File (.xlsx, .csv) & Bulk Sync to Master Catalog
-async function handleExcelUpload(e) {
-  const file = e.target.files[0];
-  if (!file) return;
-
-  const reader = new FileReader();
-  reader.onload = async (evt) => {
-    try {
-      const data = new Uint8Array(evt.target.result);
-      const workbook = XLSX.read(data, { type: 'array' });
-      const firstSheetName = workbook.SheetNames[0];
-      const worksheet = workbook.Sheets[firstSheetName];
-      const rows = XLSX.utils.sheet_to_json(worksheet);
-
-      if (!rows || rows.length === 0) {
-        alert("The uploaded Excel file contains no data.");
-        return;
-      }
-
-      for (const row of rows) {
-        const itemCode = String(row["Item Code"] || row["ItemCode"] || row["ID"] || "").trim();
-        const description = String(row["Description"] || row["Item Description"] || "").trim();
-        const category = String(row["Category"] || "Dry Food Items").trim();
-        const unit = String(row["Unit"] || row["Specification"] || "Pcs").trim();
-        const cost = Number(row["Unit Cost"] || row["Cost"] || 0);
-        const price = Number(row["Selling Price"] || row["Price"] || 0);
-
-        if (!itemCode || !description) continue;
-
-        // Upsert into master catalog (global sync)
-        await db.from('master_items').upsert([{
-          item_code: itemCode,
-          description: description,
-          category: category,
-          unit: unit,
-          cost: cost,
-          price: price,
-          updated_at: new Date().toISOString()
-        }]);
-      }
-
-      await logAudit("Excel Upload", `Uploaded ${rows.length} master items from Excel spreadsheet`);
-      alert(`Master catalog updated successfully with ${rows.length} items!`);
-      e.target.value = "";
-      showSaveStatus();
-      loadCloudData();
-    } catch (err) {
-      alert("Failed to process Excel file. Please ensure it follows the template format.");
-      console.error(err);
-    }
-  };
-  reader.readAsArrayBuffer(file);
-}
-
 function openEditItemModal(id) {
   const item = currentItems.find(i => i.id === id);
   if (!item) return;
 
   const manager = isManager();
   $("modalTitle").textContent = manager ? `Edit Item: ${item.description}` : `Log Stock for: ${item.description}`;
-  $("editEntryId").value = item.id;
+  $("editIndex").value = item.id;
   $("itemId").value = item.item_code;
+  $("itemId").readOnly = true;
   $("itemDescription").value = item.description;
   $("itemCategory").value = item.category;
   $("itemSpec").value = item.unit;
@@ -759,7 +704,6 @@ function openEditItemModal(id) {
   $("itemPrice").value = item.price;
   $("itemComments").value = item.comments || "";
 
-  $("itemId").disabled = true;
   $("itemDescription").disabled = !manager;
   $("itemCategory").disabled = !manager;
   $("itemSpec").disabled = !manager;
@@ -773,9 +717,19 @@ function openEditItemModal(id) {
 
 function openNewItemModal() {
   if (!isManager()) return;
-  $("modalTitle").textContent = "Add Inventory Item (Syncs Globally)";
-  $("editEntryId").value = "";
-  $("itemId").value = "";
+  $("modalTitle").textContent = "Add New Inventory Item (Syncs Globally)";
+  $("editIndex").value = "";
+
+  // Automatically generate next sequential Item ID
+  let maxCode = 0;
+  currentItems.forEach(i => {
+    const num = parseInt(i.item_code, 10);
+    if (!isNaN(num) && num > maxCode) maxCode = num;
+  });
+  const nextCode = String(maxCode + 1).padStart(3, '0');
+
+  $("itemId").value = nextCode;
+  $("itemId").readOnly = true;
   $("itemDescription").value = "";
   $("itemCategory").value = "Dry Food Items";
   $("itemSpec").value = "Kg";
@@ -786,7 +740,6 @@ function openNewItemModal() {
   $("itemPrice").value = "0.00";
   $("itemComments").value = "";
 
-  $("itemId").disabled = false;
   $("itemDescription").disabled = false;
   $("itemCategory").disabled = false;
   $("itemSpec").disabled = false;
@@ -805,49 +758,63 @@ function closeItemModal() {
 
 async function saveItem(e) {
   e.preventDefault();
-  const entryId = Number($("editEntryId").value);
+  const entryId = Number($("editIndex").value);
   const manager = isManager();
   const itemCode = $("itemId").value.trim();
 
-  if (manager) {
-    // 1. Sync global item details in master_items
-    await db.from('master_items').upsert([{
-      item_code: itemCode,
-      description: $("itemDescription").value.trim(),
-      category: $("itemCategory").value,
-      unit: $("itemSpec").value.trim(),
-      cost: Number($("itemCost").value) || 0,
-      price: Number($("itemPrice").value) || 0,
-      updated_at: new Date().toISOString()
-    }]);
-  }
+  const description = $("itemDescription").value.trim();
+  const category = $("itemCategory").value;
+  const unit = $("itemSpec").value.trim();
+  const cost = Number($("itemCost").value) || 0;
+  const price = Number($("itemPrice").value) || 0;
+  const added = Number($("itemAdded").value) || 0;
+  const issues = Number($("itemIssues").value) || 0;
+  const comments = $("itemComments").value.trim();
+  const opening = Number($("itemOpening").value) || 0;
 
-  // 2. Update location daily quantities strictly for this location & date
-  const dailyUpdates = {
-    added: Number($("itemAdded").value) || 0,
-    issues: Number($("itemIssues").value) || 0,
-    comments: $("itemComments").value.trim(),
-    updated_at: new Date().toISOString()
-  };
   if (manager) {
-    dailyUpdates.opening = Number($("itemOpening").value) || 0;
+    // 1. Automatically sync item metadata (description, category, unit, cost, price) globally across ALL locations & dates
+    await db.from('inventory_entries').update({
+      description: description,
+      category: category,
+      unit: unit,
+      cost: cost,
+      price: price,
+      updated_at: new Date().toISOString()
+    }).eq('item_code', itemCode);
   }
 
   if (entryId) {
-    await db.from('inventory_entries').update(dailyUpdates).eq('id', entryId);
-    await logAudit(manager ? "Update Item" : "Log Stock", `Updated stock for ${itemCode} at ${activeLocation}`);
+    // 2. Update specific location & date stock quantities
+    const updatePayload = {
+      added: added,
+      issues: issues,
+      comments: comments,
+      updated_at: new Date().toISOString()
+    };
+    if (manager) {
+      updatePayload.opening = opening;
+    }
+    await db.from('inventory_entries').update(updatePayload).eq('id', entryId);
+    await logAudit(manager ? "Update Item" : "Log Stock", `Updated stock log for item ${itemCode} at ${activeLocation}`);
   } else if (manager) {
+    // 3. Create new item entry for active location and date
     const newEntry = {
       location: activeLocation,
       entry_date: dateKey(),
       item_code: itemCode,
-      opening: Number($("itemOpening").value) || 0,
-      added: Number($("itemAdded").value) || 0,
-      issues: Number($("itemIssues").value) || 0,
-      comments: $("itemComments").value.trim()
+      description: description,
+      category: category,
+      unit: unit,
+      opening: opening,
+      added: added,
+      issues: issues,
+      cost: cost,
+      price: price,
+      comments: comments
     };
     await db.from('inventory_entries').insert([newEntry]);
-    await logAudit("Add Item", `Added new item ${itemCode} at ${activeLocation}`);
+    await logAudit("Add Item", `Added new item ${itemCode} globally at ${activeLocation}`);
   }
 
   closeItemModal();
