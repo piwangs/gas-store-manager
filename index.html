@@ -173,7 +173,7 @@
     </section>
   </main>
 
-  <!-- Change Password Modal (For Storekeepers & Managers) -->
+  <!-- Change Password Modal -->
   <div id="changePasswordModal" class="fixed inset-0 bg-slate-900/70 hidden items-center justify-center z-50 p-4">
     <div class="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl space-y-4">
       <div class="flex justify-between items-center border-b pb-3">
@@ -559,7 +559,7 @@ async function loadCloudData() {
   const masterItems = await ensureMasterCatalog();
   const masterMap = new Map(masterItems.map(m => [m.item_code, m]));
 
-  // 2. Fetch current location's daily log
+  // 2. Fetch current location's daily log strictly
   let { data: dailyEntries } = await db.from('inventory_entries')
     .select('*')
     .eq('location', activeLocation)
@@ -625,7 +625,7 @@ async function loadCloudData() {
     }
   }
 
-  // 3. Map values safely avoiding unknown items
+  // 3. Map values strictly mapping master definitions to avoid "General" or cross-contamination
   currentItems = dailyEntries.map(entry => {
     const master = masterMap.get(entry.item_code) || {};
     return {
@@ -871,7 +871,7 @@ async function saveItem(e) {
   const itemCode = $("itemId").value.trim();
 
   if (manager) {
-    // Update global master catalog
+    // 1. Update global master catalog item metadata
     await db.from('master_items').upsert([{
       item_code: itemCode,
       description: $("itemDescription").value.trim(),
@@ -883,7 +883,7 @@ async function saveItem(e) {
     }]);
   }
 
-  // Update daily store stock
+  // 2. Update store-specific daily quantities (strictly for activeLocation and date)
   const stockPayload = {
     added: Number($("itemAdded").value) || 0,
     issues: Number($("itemIssues").value) || 0,
@@ -903,7 +903,7 @@ async function saveItem(e) {
     stockPayload.entry_date = dateKey();
     stockPayload.item_code = itemCode;
     await db.from('inventory_entries').insert([stockPayload]);
-    await logAudit("Add Item", `Added new master item ${itemCode}`);
+    await logAudit("Add Item", `Added new master item ${itemCode} at ${activeLocation}`);
   }
 
   closeItemModal();
