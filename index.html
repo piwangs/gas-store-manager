@@ -173,7 +173,7 @@
         <button id="closeItemX" type="button" class="text-slate-300 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
       </div>
       <form id="itemForm" class="p-6 space-y-4">
-        <input type="hidden" id="editIndex" value="">
+        <input type="hidden" id="editEntryId" value="">
         <div class="grid grid-cols-3 gap-3">
           <div><label class="block text-xs font-semibold mb-1 text-slate-600">Item ID</label><input id="itemId" required class="w-full border rounded-lg px-3 py-2 text-xs" placeholder="001"></div>
           <div class="col-span-2"><label class="block text-xs font-semibold mb-1 text-slate-600">Item Description</label><input id="itemDescription" required maxlength="120" class="w-full border rounded-lg px-3 py-2 text-xs"></div>
@@ -481,18 +481,32 @@ async function loadLocations() {
   }
 }
 
+async function ensureMasterCatalog() {
+  let { data: masterItems } = await db.from('master_items').select('*');
+  if (!masterItems || masterItems.length === 0) {
+    await db.from('master_items').insert(defaultCatalog);
+    const { data: seeded } = await db.from('master_items').select('*');
+    return seeded || defaultCatalog;
+  }
+  return masterItems;
+}
+
 async function loadCloudData() {
   if (!currentUser) return;
   const date = dateKey();
   updateDayLabel();
 
-  let { data, error } = await db.from('inventory_entries')
+  // 1. Get centralized master catalog (synced across all locations)
+  const masterItems = await ensureMasterCatalog();
+
+  // 2. Get daily entries for this specific location & date
+  let { data: dailyEntries } = await db.from('inventory_entries')
     .select('*')
     .eq('location', activeLocation)
-    .eq('entry_date', date)
-    .order('item_code', { ascending: true });
+    .eq('entry_date', date);
 
-  if (!data || data.length === 0) {
+  // If daily entries do not exist for today, initialize them from yesterday or default opening stock
+  if (!dailyEntries || dailyEntries.length === 0) {
     const prevDate = new Date(date + "T12:00:00");
     prevDate.setDate(prevDate.getDate() - 1);
     const prevDateStr = localDateString(prevDate);
@@ -502,46 +516,73 @@ async function loadCloudData() {
       .eq('location', activeLocation)
       .eq('entry_date', prevDateStr);
 
-    let baseItems = [];
-    if (prevData && prevData.length > 0) {
-      baseItems = prevData.map(p => ({
+    const newEntries = masterItems.map(m => {
+      let openingVal = 100;
+      if (prevData && prevData.length > 0) {
+        const prev = prevData.find(p => p.item_code === m.item_code);
+        if (prev) {
+          openingVal = Number(prev.opening) + Number(prev.added) - Number(prev.issues);
+        }
+      }
+      return {
         location: activeLocation,
         entry_date: date,
-        item_code: p.item_code,
-        description: p.description,
-        category: p.category,
-        unit: p.unit,
-        opening: Number(p.opening) + Number(p.added) - Number(p.issues),
-        added: 0,
-        issues: 0,
-        cost: p.cost,
-        price: p.price,
-        comments: ""
-      }));
-    } else {
-      baseItems = defaultCatalog.map(item => ({
-        location: activeLocation,
-        entry_date: date,
-        ...item,
-        opening: 100,
+        item_code: m.item_code,
+        opening: openingVal,
         added: 0,
         issues: 0,
         comments: ""
-      }));
-    }
+      };
+    });
 
-    await db.from('inventory_entries').insert(baseItems);
+    await db.from('inventory_entries').insert(newEntries);
 
-    const { data: newData } = await db.from('inventory_entries')
+    const { data: refetched } = await db.from('inventory_entries')
       .select('*')
       .eq('location', activeLocation)
-      .eq('entry_date', date)
-      .order('item_code', { ascending: true });
+      .eq('entry_date', date);
     
-    currentItems = newData || [];
+    dailyEntries = refetched || [];
   } else {
-    currentItems = data;
+    // Ensure any newly added master items appear in today's location log
+    const existingCodes = new Set(dailyEntries.map(e => e.item_code));
+    const missingMaster = masterItems.filter(m => !existingCodes.has(m.item_code));
+    if (missingMaster.length > 0) {
+      const extraEntries = missingMaster.map(m => ({
+        location: activeLocation,
+        entry_date: date,
+        item_code: m.item_code,
+        opening: 0,
+        added: 0,
+        issues: 0,
+        comments: ""
+      }));
+      await db.from('inventory_entries').insert(extraEntries);
+      const { data: refetched2 } = await db.from('inventory_entries')
+        .select('*')
+        .eq('location', activeLocation)
+        .eq('entry_date', date);
+      dailyEntries = refetched2 || dailyEntries;
+    }
   }
+
+  // 3. Merge Master Catalog details with Location Daily Entries
+  currentItems = dailyEntries.map(entry => {
+    const master = masterItems.find(m => m.item_code === entry.item_code) || {};
+    return {
+      id: entry.id,
+      item_code: entry.item_code,
+      description: master.description || "Unknown Item",
+      category: master.category || "General",
+      unit: master.unit || "Unit",
+      opening: Number(entry.opening) || 0,
+      added: Number(entry.added) || 0,
+      issues: Number(entry.issues) || 0,
+      cost: Number(master.cost) || 0,
+      price: Number(master.price) || 0,
+      comments: entry.comments || ""
+    };
+  }).sort((a, b) => a.item_code.localeCompare(b.item_code));
 
   renderTable();
   updateKPIs();
@@ -623,7 +664,7 @@ function openEditItemModal(id) {
 
   const manager = isManager();
   $("modalTitle").textContent = manager ? `Edit Item: ${item.description}` : `Log Stock for: ${item.description}`;
-  $("editIndex").value = item.id;
+  $("editEntryId").value = item.id;
   $("itemId").value = item.item_code;
   $("itemDescription").value = item.description;
   $("itemCategory").value = item.category;
@@ -650,8 +691,8 @@ function openEditItemModal(id) {
 
 function openNewItemModal() {
   if (!isManager()) return;
-  $("modalTitle").textContent = "Add Inventory Item (Syncs to All Locations)";
-  $("editIndex").value = "";
+  $("modalTitle").textContent = "Add Inventory Item (Syncs Globally)";
+  $("editEntryId").value = "";
   $("itemId").value = String(currentItems.length + 1).padStart(3, '0');
   $("itemDescription").value = "";
   $("itemCategory").value = "Dry Food Items";
@@ -682,26 +723,24 @@ function closeItemModal() {
 
 async function saveItem(e) {
   e.preventDefault();
-  const entryId = Number($("editIndex").value);
+  const entryId = Number($("editEntryId").value);
   const manager = isManager();
   const itemCode = $("itemId").value.trim();
 
   if (manager) {
-    // SYNC MASTER DETAILS ACROSS ALL LOCATIONS & DATES FOR THIS ITEM CODE
-    const masterUpdates = {
+    // 1. Sync master item details globally across all locations
+    await db.from('master_items').upsert([{
+      item_code: itemCode,
       description: $("itemDescription").value.trim(),
       category: $("itemCategory").value,
       unit: $("itemSpec").value.trim(),
       cost: Number($("itemCost").value) || 0,
       price: Number($("itemPrice").value) || 0,
       updated_at: new Date().toISOString()
-    };
-    await db.from('inventory_entries')
-      .update(masterUpdates)
-      .eq('item_code', itemCode);
+    }]);
   }
 
-  // UPDATE LOCATION/DATE DAILY LOGS
+  // 2. Update daily inventory entry quantities and comments
   const dailyUpdates = {
     added: Number($("itemAdded").value) || 0,
     issues: Number($("itemIssues").value) || 0,
@@ -714,24 +753,19 @@ async function saveItem(e) {
 
   if (entryId) {
     await db.from('inventory_entries').update(dailyUpdates).eq('id', entryId);
-    await logAudit(manager ? "Update Item" : "Log Stock", `Updated entry for item ${itemCode} at ${activeLocation}`);
+    await logAudit(manager ? "Update Item" : "Log Stock", `Updated stock log for item ${itemCode} at ${activeLocation}`);
   } else if (manager) {
     const newEntry = {
       location: activeLocation,
       entry_date: dateKey(),
       item_code: itemCode,
-      description: $("itemDescription").value.trim(),
-      category: $("itemCategory").value,
-      unit: $("itemSpec").value.trim(),
       opening: Number($("itemOpening").value) || 0,
       added: Number($("itemAdded").value) || 0,
       issues: Number($("itemIssues").value) || 0,
-      cost: Number($("itemCost").value) || 0,
-      price: Number($("itemPrice").value) || 0,
       comments: $("itemComments").value.trim()
     };
     await db.from('inventory_entries').insert([newEntry]);
-    await logAudit("Add Item", `Added new item ${itemCode} at ${activeLocation}`);
+    await logAudit("Add Item", `Added new master item ${itemCode} at ${activeLocation}`);
   }
 
   closeItemModal();
