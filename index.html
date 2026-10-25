@@ -5,10 +5,19 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>GAS GENERAL STORE MANAGER - Cloud Real-Time System</title>
 
+  <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- FontAwesome Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- Supabase Cloud SDK -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <!-- SheetJS -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
   <script>
@@ -388,7 +397,10 @@
     function updateDayLabel() {
       const d = new Date(dateKey() + "T12:00:00");
       $("dayLabel").textContent = d.toLocaleDateString("en-US", {
-        weekday: "short", month: "short", day: "numeric", year: "numeric"
+        weekday: "short",
+        month: "short",
+        day: "numeric",
+        year: "numeric"
       });
     }
 
@@ -509,6 +521,7 @@
       }
 
       currentUser = appUser;
+
       $("loginModal").classList.add("hidden");
       $("displayUserName").textContent = `${currentUser.name} (${currentUser.role})`;
 
@@ -1426,7 +1439,7 @@
       const password = $("editUserPassword").value.trim();
 
       const updateObj = { name, role, location };
-      if (password) updateObj.password = password; // kept only for compatibility; auth password is kept in Supabase Auth
+      if (password) updateObj.password = password;
 
       const { error } = await db.from("store_users").update(updateObj).eq("id", id);
 
