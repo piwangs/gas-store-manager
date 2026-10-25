@@ -4,130 +4,91 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>GAS GENERAL STORE MANAGER - Cloud Real-Time System</title>
-  <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- FontAwesome Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <!-- Supabase Cloud SDK -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <!-- SheetJS (XLSX) for Excel Export & Import -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script>
-    tailwind.config = { 
-      theme: { 
-        extend: { 
-          colors: { 
-            brand: {
-              50:'#eff6ff', 100:'#dbeafe', 500:'#3b82f6', 600:'#2563eb', 700:'#1d4ed8', 900:'#1e3a8a'
-            }
-          }
-        }
-      }
-    };
+    tailwind.config = { theme: { extend: { colors: { brand: { 50:'#eff6ff', 100:'#dbeafe', 500:'#3b82f6', 600:'#2563eb', 700:'#1d4ed8', 900:'#1e3a8a' } } } } };
   </script>
-  <style>
-    @media print {
-      #loginModal, header button, #managerLocationBox, #filtersPanel,
-      #itemModal, #userManagerModal, #editUserModal, #auditModal, #reorderModal, #changePasswordModal, .no-print { display:none !important; }
-      body { background:white !important; }
-      main { max-width:none !important; padding:0 !important; }
-      .shadow-sm { box-shadow:none !important; }
-    }
-  </style>
 </head>
 <body class="bg-slate-100 text-slate-800 font-sans min-h-screen flex flex-col">
 
-  <!-- Hidden Excel File Input -->
   <input type="file" id="excelFileInput" accept=".xlsx, .xls, .csv" class="hidden">
 
   <!-- Login Modal -->
   <div id="loginModal" class="fixed inset-0 bg-slate-900/90 z-50 flex items-center justify-center p-4">
     <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 space-y-4">
       <div class="text-center">
-        <div class="inline-block bg-brand-600 text-white p-3.5 rounded-2xl mb-2 shadow-md">
-          <i class="fa-solid fa-lock text-2xl"></i>
-        </div>
+        <div class="inline-block bg-brand-600 text-white p-3.5 rounded-2xl mb-2 shadow-md"><i class="fa-solid fa-lock text-2xl"></i></div>
         <h2 class="text-xl font-bold text-slate-800">GAS GENERAL STORE MANAGER</h2>
         <p class="text-xs text-slate-500 mt-1">Cloud Real-Time Multi-Location System</p>
       </div>
-
       <form id="loginForm" class="space-y-3">
-        <div>
-          <label for="loginUser" class="block text-xs font-semibold uppercase mb-1 text-slate-600">Username</label>
-          <input id="loginUser" required autocomplete="username" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none" placeholder="Enter username">
-        </div>
-        <div>
-          <label for="loginPass" class="block text-xs font-semibold uppercase mb-1 text-slate-600">Password</label>
-          <input id="loginPass" type="password" required autocomplete="current-password" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none" placeholder="Enter password">
-        </div>
-        <div id="loginError" class="hidden text-xs text-rose-600 font-semibold text-center">Invalid username or password.</div>
-        <button type="submit" class="w-full bg-brand-600 hover:bg-brand-700 text-white font-bold py-2.5 rounded-lg text-sm shadow-md transition">Sign In to Cloud System</button>
+        <div><label class="block text-xs font-semibold uppercase mb-1 text-slate-600">Username</label><input id="loginUser" required class="w-full bg-slate-50 border rounded-lg px-3 py-2 text-sm"></div>
+        <div><label class="block text-xs font-semibold uppercase mb-1 text-slate-600">Password</label><input id="loginPass" type="password" required class="w-full bg-slate-50 border rounded-lg px-3 py-2 text-sm"></div>
+        <div id="loginError" class="hidden text-xs text-rose-600 font-semibold text-center">Invalid username or password, or account disabled.</div>
+        <button type="submit" class="w-full bg-brand-600 hover:bg-brand-700 text-white font-bold py-2.5 rounded-lg text-sm shadow-md transition">Sign In</button>
       </form>
     </div>
   </div>
 
-  <!-- Header Navigation -->
+  <!-- Header -->
   <header class="bg-slate-900 text-white shadow-lg sticky top-0 z-40">
     <div class="max-w-7xl mx-auto px-4 py-3 flex flex-col sm:flex-row justify-between items-center gap-4">
       <div class="flex items-center gap-3">
-        <div class="bg-brand-600 p-2.5 rounded-xl shadow-md"><i class="fa-solid fa-boxes-stacked text-xl"></i></div>
+        <div class="bg-brand-600 p-2.5 rounded-xl"><i class="fa-solid fa-boxes-stacked text-xl"></i></div>
         <div>
-          <h1 class="text-xl font-bold tracking-tight">GAS GENERAL STORE MANAGER <span id="locationBadge" class="text-xs bg-brand-700 px-2.5 py-0.5 rounded-full ml-2">Signed out</span></h1>
-          <p class="text-xs text-slate-400">Cloud Connected Multi-Location System</p>
+          <h1 class="text-xl font-bold">GAS GENERAL STORE MANAGER <span id="locationBadge" class="text-xs bg-brand-700 px-2.5 py-0.5 rounded-full ml-2">Signed out</span></h1>
+          <p class="text-xs text-slate-400">Cloud Connected System</p>
         </div>
       </div>
-      <div class="flex flex-wrap items-center justify-end gap-2 w-full sm:w-auto">
+      <div class="flex flex-wrap items-center justify-end gap-2">
         <div class="flex items-center bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 gap-2 text-xs">
           <i class="fa-solid fa-user-check text-blue-400"></i>
           <span id="displayUserName" class="font-semibold text-white">Signed out</span>
-          <button id="userPasswordBtn" type="button" class="text-slate-400 hover:text-amber-400 ml-1 transition" title="Change My Password"><i class="fa-solid fa-key"></i></button>
-          <button id="logoutBtn" type="button" class="text-slate-400 hover:text-rose-400 ml-1 transition" title="Logout"><i class="fa-solid fa-right-from-bracket"></i></button>
+          <button id="logoutBtn" type="button" class="text-slate-400 hover:text-rose-400 ml-1" title="Logout"><i class="fa-solid fa-right-from-bracket"></i></button>
         </div>
-        <button id="downloadTemplateBtn" type="button" class="hidden bg-emerald-700 hover:bg-emerald-800 text-white px-3 py-2 rounded-lg text-xs font-semibold shadow-md transition"><i class="fa-solid fa-file-excel mr-1"></i>Master Template</button>
-        <button id="uploadExcelBtn" type="button" class="hidden bg-teal-600 hover:bg-teal-700 text-white px-3 py-2 rounded-lg text-xs font-semibold shadow-md transition"><i class="fa-solid fa-file-arrow-up mr-1"></i>Upload Excel</button>
-        <button id="reorderBtn" type="button" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-2 rounded-lg text-xs font-semibold border border-slate-700 transition"><i class="fa-solid fa-cart-flatbed text-amber-400 mr-1"></i>Reorder List</button>
-        <button id="auditBtn" type="button" class="hidden bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-2 rounded-lg text-xs font-semibold border border-slate-700 transition"><i class="fa-solid fa-clock-rotate-left text-brand-400 mr-1"></i>Audit Log</button>
-        <button id="manageUsersBtn" type="button" class="hidden bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-lg text-xs font-semibold shadow-md transition"><i class="fa-solid fa-users-gear mr-1"></i>Stores & Accounts</button>
-        <button id="exportBtn" type="button" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-2 rounded-lg text-xs border border-slate-700 transition"><i class="fa-solid fa-file-csv text-emerald-400 mr-1"></i>Export CSV</button>
-        <button id="printBtn" type="button" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-2 rounded-lg text-xs border border-slate-700 transition"><i class="fa-solid fa-print text-amber-400 mr-1"></i>Print</button>
-        <button id="newItemBtn" type="button" class="hidden bg-brand-600 hover:bg-brand-700 text-white px-3.5 py-2 rounded-lg text-xs font-semibold shadow-md transition"><i class="fa-solid fa-plus mr-1"></i>New Item</button>
+        <button id="downloadTemplateBtn" type="button" class="hidden bg-emerald-700 hover:bg-emerald-800 text-white px-3 py-2 rounded-lg text-xs font-semibold"><i class="fa-solid fa-file-excel mr-1"></i>Template</button>
+        <button id="uploadExcelBtn" type="button" class="hidden bg-teal-600 hover:bg-teal-700 text-white px-3 py-2 rounded-lg text-xs font-semibold"><i class="fa-solid fa-file-arrow-up mr-1"></i>Upload</button>
+        <button id="reorderBtn" type="button" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-2 rounded-lg text-xs font-semibold border border-slate-700"><i class="fa-solid fa-cart-flatbed text-amber-400 mr-1"></i>Reorder</button>
+        <button id="auditBtn" type="button" class="hidden bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-2 rounded-lg text-xs font-semibold border border-slate-700"><i class="fa-solid fa-clock-rotate-left mr-1"></i>Audit</button>
+        <button id="manageUsersBtn" type="button" class="hidden bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-lg text-xs font-semibold"><i class="fa-solid fa-users-gear mr-1"></i>Admin Panel</button>
+        <button id="exportBtn" type="button" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-2 rounded-lg text-xs border border-slate-700"><i class="fa-solid fa-file-csv mr-1"></i>Export</button>
+        <button id="printBtn" type="button" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-2 rounded-lg text-xs border border-slate-700"><i class="fa-solid fa-print mr-1"></i>Print</button>
+        <button id="newItemBtn" type="button" class="hidden bg-brand-600 hover:bg-brand-700 text-white px-3.5 py-2 rounded-lg text-xs font-semibold"><i class="fa-solid fa-plus mr-1"></i>New Item</button>
       </div>
     </div>
   </header>
 
-  <!-- Main Content -->
+  <!-- Main -->
   <main class="flex-grow max-w-7xl w-full mx-auto px-4 py-6 space-y-6">
-    <!-- Date and Location Selector Bar -->
-    <section class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col md:flex-row justify-between items-center gap-4">
-      <div class="flex items-center gap-2 flex-wrap">
-        <button id="prevDateBtn" class="bg-slate-100 hover:bg-slate-200 px-3 py-2 rounded-lg text-sm font-semibold transition"><i class="fa-solid fa-chevron-left"></i></button>
-        <div class="flex items-center gap-2"><i class="fa-solid fa-calendar-day text-brand-600"></i><input type="date" id="selectedDate" class="bg-slate-50 border border-slate-300 rounded-lg text-sm font-bold p-2 focus:ring-brand-500"></div>
-        <button id="nextDateBtn" class="bg-slate-100 hover:bg-slate-200 px-3 py-2 rounded-lg text-sm font-semibold transition"><i class="fa-solid fa-chevron-right"></i></button>
-        <button id="todayBtn" class="bg-brand-50 hover:bg-brand-100 text-brand-700 px-3 py-2 rounded-lg text-xs font-bold transition">Today</button>
+    <section class="bg-white p-4 rounded-xl shadow-sm border flex flex-col md:flex-row justify-between items-center gap-4">
+      <div class="flex items-center gap-2">
+        <button id="prevDateBtn" class="bg-slate-100 px-3 py-2 rounded-lg text-sm font-semibold"><i class="fa-solid fa-chevron-left"></i></button>
+        <div class="flex items-center gap-2"><i class="fa-solid fa-calendar-day text-brand-600"></i><input type="date" id="selectedDate" class="bg-slate-50 border rounded-lg text-sm font-bold p-2"></div>
+        <button id="nextDateBtn" class="bg-slate-100 px-3 py-2 rounded-lg text-sm font-semibold"><i class="fa-solid fa-chevron-right"></i></button>
+        <button id="todayBtn" class="bg-brand-50 hover:bg-brand-100 text-brand-700 px-3 py-2 rounded-lg text-xs font-bold">Today</button>
       </div>
       <div id="managerLocationBox" class="hidden items-center gap-2">
-        <label for="locationSelector" class="text-xs font-semibold text-slate-500">Location:</label>
-        <select id="locationSelector" class="bg-slate-50 border border-slate-300 rounded-lg text-xs p-2 font-semibold text-slate-800 focus:ring-brand-500"></select>
+        <label class="text-xs font-semibold text-slate-500">Location:</label>
+        <select id="locationSelector" class="bg-slate-50 border rounded-lg text-xs p-2 font-semibold"></select>
       </div>
-      <div class="flex items-center gap-3">
-        <span id="dayLabel" class="text-xs font-semibold text-slate-500 bg-slate-100 px-3 py-1.5 rounded-full">--</span>
-        <span id="saveStatus" class="text-xs text-emerald-600 font-semibold opacity-0 transition-opacity"><i class="fa-solid fa-cloud-arrow-up mr-1"></i>Synced to Cloud</span>
-      </div>
+      <span id="dayLabel" class="text-xs font-semibold text-slate-500 bg-slate-100 px-3 py-1.5 rounded-full">--</span>
     </section>
 
-    <!-- Operational & Financial KPI Cards -->
+    <!-- KPIs -->
     <section class="grid grid-cols-2 md:grid-cols-5 gap-4">
-      <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200"><div class="flex justify-between items-center"><span class="text-xs font-semibold text-slate-400 uppercase">Items Tracked</span><i class="fa-solid fa-list text-brand-500 bg-brand-50 p-2 rounded-lg"></i></div><h3 id="statTotalItems" class="text-2xl font-bold mt-2 text-slate-800">0</h3></div>
-      <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200"><div class="flex justify-between items-center"><span class="text-xs font-semibold text-slate-400 uppercase">Daily Issues</span><i class="fa-solid fa-hand-holding text-amber-500 bg-amber-50 p-2 rounded-lg"></i></div><h3 id="statTotalIssues" class="text-2xl font-bold mt-2 text-slate-800">0</h3></div>
-      <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200"><div class="flex justify-between items-center"><span class="text-xs font-semibold text-slate-400 uppercase">Daily Revenue</span><i class="fa-solid fa-sack-dollar text-emerald-500 bg-emerald-50 p-2 rounded-lg"></i></div><h3 id="statDailyRevenue" class="text-2xl font-bold mt-2 text-emerald-600">$0.00</h3></div>
-      <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200"><div class="flex justify-between items-center"><span class="text-xs font-semibold text-slate-400 uppercase">Est. Gross Profit</span><i class="fa-solid fa-chart-line text-blue-500 bg-blue-50 p-2 rounded-lg"></i></div><h3 id="statGrossProfit" class="text-2xl font-bold mt-2 text-blue-600">$0.00</h3></div>
-      <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 col-span-2 md:col-span-1"><div class="flex justify-between items-center"><span class="text-xs font-semibold text-slate-400 uppercase">Low Stock Alerts</span><i class="fa-solid fa-triangle-exclamation text-rose-500 bg-rose-50 p-2 rounded-lg"></i></div><h3 id="statLowStock" class="text-2xl font-bold mt-2 text-rose-600">0</h3></div>
+      <div class="bg-white p-4 rounded-xl shadow-sm border"><span class="text-xs font-semibold text-slate-400 uppercase">Items Tracked</span><h3 id="statTotalItems" class="text-2xl font-bold mt-2">0</h3></div>
+      <div class="bg-white p-4 rounded-xl shadow-sm border"><span class="text-xs font-semibold text-slate-400 uppercase">Daily Issues</span><h3 id="statTotalIssues" class="text-2xl font-bold mt-2">0</h3></div>
+      <div class="bg-white p-4 rounded-xl shadow-sm border"><span class="text-xs font-semibold text-slate-400 uppercase">Daily Revenue</span><h3 id="statDailyRevenue" class="text-2xl font-bold mt-2 text-emerald-600">$0.00</h3></div>
+      <div class="bg-white p-4 rounded-xl shadow-sm border"><span class="text-xs font-semibold text-slate-400 uppercase">Est. Gross Profit</span><h3 id="statGrossProfit" class="text-2xl font-bold mt-2 text-blue-600">$0.00</h3></div>
+      <div class="bg-white p-4 rounded-xl shadow-sm border col-span-2 md:col-span-1"><span class="text-xs font-semibold text-slate-400 uppercase">Low Stock Alerts</span><h3 id="statLowStock" class="text-2xl font-bold mt-2 text-rose-600">0</h3></div>
     </section>
 
-    <!-- Filters Panel -->
-    <section id="filtersPanel" class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col md:flex-row justify-between items-center gap-3">
+    <!-- Filters -->
+    <section class="bg-white p-4 rounded-xl shadow-sm border flex flex-col md:flex-row justify-between items-center gap-3">
       <div class="flex flex-wrap gap-2" id="categoryFilter">
         <button data-category="All" class="cat-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-brand-600 text-white">All</button>
         <button data-category="Dry Food Items" class="cat-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 text-slate-700">Dry Food</button>
@@ -136,190 +97,105 @@
         <button data-category="Frozen" class="cat-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 text-slate-700">Frozen</button>
         <button data-category="Fresh Food Items" class="cat-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 text-slate-700">Fresh Food</button>
       </div>
-      <input id="searchInput" type="search" placeholder="Search item..." class="w-full md:w-64 bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none">
+      <input id="searchInput" type="search" placeholder="Search item..." class="w-full md:w-64 bg-slate-50 border rounded-lg px-3 py-2 text-xs">
     </section>
 
-    <!-- Inventory Data Table -->
-    <section class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+    <!-- Table -->
+    <section class="bg-white rounded-xl shadow-sm border overflow-hidden">
       <div class="overflow-x-auto">
-        <table class="w-full text-left border-collapse" id="inventoryTable">
+        <table class="w-full text-left border-collapse">
           <thead>
             <tr class="bg-slate-900 text-slate-200 text-xs uppercase tracking-wider font-semibold">
-              <th class="p-3">ID</th>
-              <th class="p-3">Item Description</th>
-              <th class="p-3">Category</th>
-              <th class="p-3 text-center">Unit</th>
-              <th class="p-3 text-center">Opening</th>
-              <th class="p-3 text-center">Added</th>
-              <th class="p-3 text-center">Issues</th>
-              <th class="p-3 text-center">Closing</th>
-              <th class="p-3 text-right">Cost Price</th>
-              <th class="p-3 text-right">Sale Price</th>
-              <th class="p-3 text-right">Est. Revenue</th>
-              <th class="p-3">Comments</th>
-              <th class="p-3 text-center">Actions</th>
+              <th class="p-3">ID</th><th class="p-3">Item Description</th><th class="p-3">Category</th>
+              <th class="p-3 text-center">Unit</th><th class="p-3 text-center">Opening</th><th class="p-3 text-center">Added</th>
+              <th class="p-3 text-center">Issues</th><th class="p-3 text-center">Closing</th><th class="p-3 text-right">Cost</th>
+              <th class="p-3 text-right">Price</th><th class="p-3 text-right">Revenue</th><th class="p-3">Comments</th><th class="p-3 text-center">Actions</th>
             </tr>
           </thead>
-          <tbody id="tableBody" class="divide-y divide-slate-200 text-xs font-medium"></tbody>
+          <tbody id="tableBody" class="divide-y text-xs font-medium"></tbody>
         </table>
       </div>
-      <div id="emptyState" class="hidden p-8 text-center text-sm text-slate-500">No inventory items found for this date/location in the cloud.</div>
+      <div id="emptyState" class="hidden p-8 text-center text-sm text-slate-500">No inventory items found.</div>
     </section>
 
-    <!-- Category Chart Section -->
-    <section class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
-      <h3 class="text-sm font-bold text-slate-800 mb-4 flex items-center"><i class="fa-solid fa-chart-bar text-brand-600 mr-2"></i>Daily Issues Breakdown by Category</h3>
+    <section class="bg-white p-5 rounded-xl shadow-sm border">
+      <h3 class="text-sm font-bold text-slate-800 mb-4">Daily Issues Breakdown by Category</h3>
       <div class="h-64"><canvas id="categoryChart"></canvas></div>
     </section>
   </main>
 
-  <!-- Change Password Modal -->
-  <div id="changePasswordModal" class="fixed inset-0 bg-slate-900/70 hidden items-center justify-center z-50 p-4">
-    <div class="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl space-y-4">
-      <div class="flex justify-between items-center border-b pb-3">
-        <h3 class="font-bold text-base text-slate-800"><i class="fa-solid fa-key text-amber-500 mr-2"></i>Change My Password</h3>
-        <button id="closeChangePassX" type="button"><i class="fa-solid fa-xmark text-lg"></i></button>
-      </div>
-      <form id="changePasswordForm" class="space-y-3">
-        <div>
-          <label class="block text-xs font-semibold mb-1 text-slate-600">Current Password</label>
-          <input id="myCurrentPassword" type="password" required class="w-full border rounded-lg px-3 py-2 text-xs">
-        </div>
-        <div>
-          <label class="block text-xs font-semibold mb-1 text-slate-600">New Password (Min 8 characters)</label>
-          <input id="myNewPassword" type="password" required minlength="8" class="w-full border rounded-lg px-3 py-2 text-xs">
-        </div>
-        <div>
-          <label class="block text-xs font-semibold mb-1 text-slate-600">Confirm New Password</label>
-          <input id="myConfirmPassword" type="password" required minlength="8" class="w-full border rounded-lg px-3 py-2 text-xs">
-        </div>
-        <div id="changePassError" class="hidden text-xs text-rose-600 font-semibold text-center"></div>
-        <div class="flex justify-end gap-2 pt-2">
-          <button id="cancelChangePassBtn" type="button" class="bg-slate-100 hover:bg-slate-200 px-4 py-2 rounded-lg text-xs font-semibold">Cancel</button>
-          <button type="submit" class="bg-amber-600 hover:bg-amber-700 text-white px-5 py-2 rounded-lg text-xs font-semibold shadow-md">Update Password</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <!-- Add/Edit Inventory Item Modal -->
-  <div id="itemModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
-    <div class="bg-white rounded-2xl shadow-xl max-w-lg w-full overflow-hidden border border-slate-200">
+  <!-- Add/Edit Modal -->
+  <div id="itemModal" class="fixed inset-0 bg-slate-900/60 hidden items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-2xl shadow-xl max-w-lg w-full overflow-hidden">
       <div class="bg-slate-900 text-white px-6 py-4 flex justify-between items-center">
-        <h3 id="modalTitle" class="font-bold text-sm">Add/Edit Inventory Item</h3>
-        <button id="closeItemX" type="button" class="text-slate-300 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+        <h3 id="modalTitle" class="font-bold text-sm">Item Log</h3>
+        <button id="closeItemX" type="button"><i class="fa-solid fa-xmark text-lg"></i></button>
       </div>
       <form id="itemForm" class="p-6 space-y-4">
-        <input type="hidden" id="editEntryId" value="">
         <div class="grid grid-cols-3 gap-3">
-          <div><label class="block text-xs font-semibold mb-1 text-slate-600">Item ID</label><input id="itemId" readonly class="w-full bg-slate-100 border rounded-lg px-3 py-2 text-xs font-mono" placeholder="Auto"></div>
-          <div class="col-span-2"><label class="block text-xs font-semibold mb-1 text-slate-600">Item Description</label><input id="itemDescription" required maxlength="120" class="w-full border rounded-lg px-3 py-2 text-xs" placeholder="e.g. Sugar brown"></div>
+          <div><label class="block text-xs font-semibold mb-1">Item ID</label><input id="itemId" readonly class="w-full bg-slate-100 border rounded-lg px-3 py-2 text-xs font-mono"></div>
+          <div class="col-span-2"><label class="block text-xs font-semibold mb-1">Item Description</label><input id="itemDescription" required class="w-full border rounded-lg px-3 py-2 text-xs"></div>
         </div>
         <div class="grid grid-cols-2 gap-3">
-          <div><label class="block text-xs font-semibold mb-1 text-slate-600">Category</label><select id="itemCategory" required class="w-full border rounded-lg px-3 py-2 text-xs"><option value="">Select category...</option><option>Dry Food Items</option><option>Soft Drinks</option><option>Alcoholic</option><option>Frozen</option><option>Fresh Food Items</option></select></div>
-          <div><label class="block text-xs font-semibold mb-1 text-slate-600">Specification / Unit</label><input id="itemSpec" required maxlength="30" placeholder="Kg, Pkt, Can" class="w-full border rounded-lg px-3 py-2 text-xs"></div>
+          <div><label class="block text-xs font-semibold mb-1">Category</label><select id="itemCategory" required class="w-full border rounded-lg px-3 py-2 text-xs"><option value="">Select...</option><option>Dry Food Items</option><option>Soft Drinks</option><option>Alcoholic</option><option>Frozen</option><option>Fresh Food Items</option></select></div>
+          <div><label class="block text-xs font-semibold mb-1">Unit</label><input id="itemSpec" required class="w-full border rounded-lg px-3 py-2 text-xs"></div>
         </div>
         <div class="grid grid-cols-3 gap-3">
-          <div><label class="block text-xs font-semibold mb-1 text-slate-600">Opening Stock</label><input id="itemOpening" type="number" min="0" step="any" required value="0" class="w-full border rounded-lg px-3 py-2 text-xs"></div>
-          <div><label class="block text-xs font-semibold mb-1 text-slate-600">Stock Added</label><input id="itemAdded" type="number" min="0" step="any" value="0" class="w-full border rounded-lg px-3 py-2 text-xs"></div>
-          <div><label class="block text-xs font-semibold mb-1 text-slate-600">Daily Issues</label><input id="itemIssues" type="number" min="0" step="any" value="0" class="w-full border rounded-lg px-3 py-2 text-xs"></div>
+          <div><label class="block text-xs font-semibold mb-1">Opening</label><input id="itemOpening" type="number" step="any" required value="0" class="w-full border rounded-lg px-3 py-2 text-xs"></div>
+          <div><label class="block text-xs font-semibold mb-1">Stock Added</label><input id="itemAdded" type="number" step="any" value="0" class="w-full border rounded-lg px-3 py-2 text-xs"></div>
+          <div><label class="block text-xs font-semibold mb-1">Daily Issues</label><input id="itemIssues" type="number" step="any" value="0" class="w-full border rounded-lg px-3 py-2 text-xs"></div>
         </div>
         <div class="grid grid-cols-2 gap-3">
-          <div><label class="block text-xs font-semibold mb-1 text-slate-600">Unit Cost ($)</label><input id="itemCost" type="number" min="0" step="0.01" value="0.00" class="w-full border rounded-lg px-3 py-2 text-xs"></div>
-          <div><label class="block text-xs font-semibold mb-1 text-slate-600">Selling Price ($)</label><input id="itemPrice" type="number" min="0" step="0.01" value="0.00" class="w-full border rounded-lg px-3 py-2 text-xs"></div>
+          <div><label class="block text-xs font-semibold mb-1">Unit Cost ($)</label><input id="itemCost" type="number" step="0.01" value="0.00" class="w-full border rounded-lg px-3 py-2 text-xs"></div>
+          <div><label class="block text-xs font-semibold mb-1">Selling Price ($)</label><input id="itemPrice" type="number" step="0.01" value="0.00" class="w-full border rounded-lg px-3 py-2 text-xs"></div>
         </div>
-        <div><label class="block text-xs font-semibold mb-1 text-slate-600">Comments / Transfers</label><input id="itemComments" maxlength="300" class="w-full border rounded-lg px-3 py-2 text-xs" placeholder="Notes..."></div>
+        <div><label class="block text-xs font-semibold mb-1">Comments / Transfers</label><input id="itemComments" class="w-full border rounded-lg px-3 py-2 text-xs"></div>
         <div class="flex justify-between items-center pt-2">
-          <button id="deleteItemBtn" type="button" class="hidden bg-rose-600 hover:bg-rose-700 text-white px-3 py-2 rounded-lg text-xs font-semibold transition"><i class="fa-solid fa-trash mr-1"></i>Delete Entry</button>
+          <button id="deleteItemBtn" type="button" class="hidden bg-rose-600 text-white px-3 py-2 rounded-lg text-xs font-semibold"><i class="fa-solid fa-trash mr-1"></i>Delete Item</button>
           <div class="flex gap-2 ml-auto">
-            <button id="cancelItemBtn" type="button" class="bg-slate-100 hover:bg-slate-200 px-4 py-2 rounded-lg text-xs font-semibold">Cancel</button>
-            <button type="submit" class="bg-brand-600 hover:bg-brand-700 text-white px-5 py-2 rounded-lg text-xs font-semibold shadow-md">Save Log / Entry</button>
+            <button id="cancelItemBtn" type="button" class="bg-slate-100 px-4 py-2 rounded-lg text-xs font-semibold">Cancel</button>
+            <button type="submit" class="bg-brand-600 text-white px-5 py-2 rounded-lg text-xs font-semibold shadow-md">Save Entry</button>
           </div>
         </div>
       </form>
     </div>
   </div>
 
-  <!-- Reorder & Supplier Draft Modal -->
-  <div id="reorderModal" class="fixed inset-0 bg-slate-900/70 hidden items-center justify-center z-50 p-4">
-    <div class="bg-white rounded-xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto space-y-4">
-      <div class="flex justify-between items-center border-b pb-3">
-        <h2 class="font-bold text-base text-slate-800 flex items-center gap-2"><i class="fa-solid fa-cart-flatbed text-amber-500"></i>Reorder & Low Stock Draft</h2>
-        <button id="closeReorderX" type="button"><i class="fa-solid fa-xmark"></i></button>
-      </div>
-      <p class="text-xs text-slate-500">Items below or equal to 5 units in closing stock at <b id="reorderLocationLabel">--</b>:</p>
-      <div id="reorderItemsList" class="space-y-2 text-xs"></div>
-      <div>
-        <label class="block text-xs font-semibold mb-1 text-slate-700">Supplier Order Text / WhatsApp Message Draft:</label>
-        <textarea id="reorderDraftText" rows="6" readonly class="w-full bg-slate-50 border rounded-lg p-3 text-xs font-mono"></textarea>
-      </div>
-      <div class="flex justify-end gap-2">
-        <button id="copyReorderBtn" type="button" class="bg-brand-600 hover:bg-brand-700 text-white px-4 py-2 rounded-lg text-xs font-semibold"><i class="fa-solid fa-copy mr-1"></i>Copy Text</button>
-        <button id="closeReorderBtn" type="button" class="bg-slate-100 hover:bg-slate-200 px-4 py-2 rounded-lg text-xs font-semibold">Close</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Audit Log Viewer Modal -->
-  <div id="auditModal" class="fixed inset-0 bg-slate-900/70 hidden items-center justify-center z-50 p-4">
-    <div class="bg-white rounded-xl p-6 w-full max-w-3xl max-h-[90vh] overflow-y-auto space-y-4">
-      <div class="flex justify-between items-center border-b pb-3">
-        <h2 class="font-bold text-base text-slate-800 flex items-center gap-2"><i class="fa-solid fa-clock-rotate-left text-brand-600"></i>Storekeeper Activity & Audit Log</h2>
-        <button id="closeAuditX" type="button"><i class="fa-solid fa-xmark"></i></button>
-      </div>
-      <div id="auditList" class="space-y-2 text-xs"></div>
-      <div class="flex justify-end">
-        <button id="closeAuditBtn" type="button" class="bg-slate-100 hover:bg-slate-200 px-4 py-2 rounded-lg text-xs font-semibold">Close</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Store Locations & Accounts Management Modal -->
+  <!-- Admin Panel Modal -->
   <div id="userManagerModal" class="fixed inset-0 bg-slate-900/70 hidden items-center justify-center z-50 p-4">
     <div class="bg-white rounded-xl p-6 w-full max-w-2xl max-h-[92vh] overflow-y-auto space-y-4">
-      <div class="flex justify-between items-center"><h2 class="font-bold text-lg text-slate-800">Manage Store Locations & Accounts</h2><button id="closeUsersX" type="button"><i class="fa-solid fa-xmark"></i></button></div>
+      <div class="flex justify-between items-center"><h2 class="font-bold text-lg">Manage Locations & Accounts</h2><button id="closeUsersX" type="button"><i class="fa-solid fa-xmark"></i></button></div>
       
-      <!-- Store Locations List & Add Form -->
-      <div class="space-y-2">
-        <h3 class="font-bold text-sm text-slate-800">Store Locations</h3>
-        <form id="locationForm" class="flex flex-col sm:flex-row gap-2">
-          <input id="newLocationName" required maxlength="80" placeholder="New location name (e.g. Wau Depot)" class="border rounded-lg p-2 flex-1 text-sm">
-          <button type="submit" class="bg-brand-600 hover:bg-brand-700 text-white rounded-lg px-4 py-2 text-sm font-semibold">Add Store Location</button>
-        </form>
-        <div id="locationList" class="space-y-1.5 pt-2"></div>
-      </div>
+      <h3 class="font-bold text-sm">Store Locations</h3>
+      <form id="locationForm" class="flex gap-2"><input id="newLocationName" required placeholder="New location name" class="border rounded-lg p-2 flex-1 text-sm"><button type="submit" class="bg-brand-600 text-white rounded-lg px-4 py-2 text-sm font-semibold">Add Location</button></form>
+      <div id="locationList" class="space-y-1 pt-1"></div>
 
-      <hr class="my-4">
-
-      <!-- Storekeeper Account Creation -->
-      <h3 class="font-bold text-sm text-slate-800">Create Account (Manager or Storekeeper)</h3>
+      <hr class="my-3">
+      <h3 class="font-bold text-sm">Create Account (Manager or Storekeeper)</h3>
       <form id="userForm" class="grid sm:grid-cols-2 gap-3">
-        <input id="newUsername" required minlength="3" maxlength="40" autocomplete="off" placeholder="Username (e.g. manager_juba)" class="border rounded-lg p-2 text-sm">
-        <input id="newDisplayName" required maxlength="80" placeholder="Full name" class="border rounded-lg p-2 text-sm">
-        <input id="newPassword" required minlength="8" type="password" autocomplete="new-password" placeholder="Password (8+ characters)" class="border rounded-lg p-2 text-sm">
-        <select id="newUserRole" required class="border rounded-lg p-2 text-sm font-semibold">
-          <option value="Storekeeper">Storekeeper</option>
-          <option value="Manager">Manager</option>
-        </select>
+        <input id="newUsername" required placeholder="Username" class="border rounded-lg p-2 text-sm">
+        <input id="newDisplayName" required placeholder="Full name" class="border rounded-lg p-2 text-sm">
+        <input id="newPassword" required type="password" placeholder="Password (8+ chars)" class="border rounded-lg p-2 text-sm">
+        <select id="newUserRole" required class="border rounded-lg p-2 text-sm"><option value="Storekeeper">Storekeeper</option><option value="Manager">Manager</option></select>
         <select id="newUserLocation" required class="border rounded-lg p-2 text-sm sm:col-span-2"></select>
-        <button type="submit" class="sm:col-span-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg p-2 font-semibold text-sm shadow-md">Create Account</button>
+        <button type="submit" class="sm:col-span-2 bg-purple-600 text-white rounded-lg p-2 font-semibold text-sm">Create Account</button>
       </form>
 
-      <hr class="my-4">
-
-      <!-- Active Accounts List -->
-      <h3 class="font-bold text-sm text-slate-800">Existing Accounts & Privileges</h3>
+      <hr class="my-3">
+      <h3 class="font-bold text-sm">Existing Accounts (Enable/Disable)</h3>
       <div id="accountList" class="space-y-2 text-sm"></div>
       <button id="closeUsersBtn" type="button" class="w-full bg-slate-100 rounded-lg p-2 text-sm font-semibold mt-2">Close</button>
     </div>
   </div>
 
+  <!-- Audit & Reorder Modals -->
+  <div id="auditModal" class="fixed inset-0 bg-slate-900/70 hidden items-center justify-center z-50 p-4"><div class="bg-white rounded-xl p-6 w-full max-w-3xl max-h-[90vh] overflow-y-auto space-y-4"><div class="flex justify-between items-center"><h2 class="font-bold">Audit Logs</h2><button id="closeAuditX"><i class="fa-solid fa-xmark"></i></button></div><div id="auditList" class="space-y-2 text-xs"></div></div></div>
+  <div id="reorderModal" class="fixed inset-0 bg-slate-900/70 hidden items-center justify-center z-50 p-4"><div class="bg-white rounded-xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto space-y-4"><div class="flex justify-between items-center"><h2 class="font-bold">Low Stock Reorder</h2><button id="closeReorderX"><i class="fa-solid fa-xmark"></i></button></div><textarea id="reorderDraftText" rows="6" readonly class="w-full bg-slate-50 border rounded-lg p-3 text-xs font-mono"></textarea><button id="closeReorderBtn" class="bg-slate-100 px-4 py-2 rounded-lg text-xs font-semibold">Close</button></div></div>
+
   <script>
   "use strict";
-
   const SUPABASE_URL = "https://pxboxopyrcprdmpjucia.supabase.co";
   const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB4Ym94b3B5cmNwcmRtcGp1Y2lhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI3MzYyNDEsImV4cCI6MjEwODMxMjI0MX0.rw8NCKG1JMPDbQyiIpjRYVSpNHaXn6R_hp_aJSocGpc";
-
   const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
   const defaultCatalog = [
@@ -344,23 +220,13 @@
   const isManager = () => !!currentUser && currentUser.role === "Manager";
 
   function localDateString(date = new Date()) {
-    const y = date.getFullYear();
-    const m = String(date.getMonth()+1).padStart(2,"0");
-    const d = String(date.getDate()).padStart(2,"0");
-    return `${y}-${m}-${d}`;
+    return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,"0")}-${String(date.getDate()).padStart(2,"0")}`;
   }
-
   function dateKey() { return $("selectedDate").value || localDateString(); }
 
   async function logAudit(action, details) {
     if (!currentUser) return;
-    await db.from('audit_logs').insert([{
-      username: currentUser.username,
-      role: currentUser.role,
-      location: activeLocation,
-      action: action,
-      details: details
-    }]);
+    await db.from('audit_logs').insert([{ username: currentUser.username, role: currentUser.role, location: activeLocation, action, details }]);
   }
 
   window.addEventListener("DOMContentLoaded", () => {
@@ -372,7 +238,6 @@
   function bindEvents() {
     $("loginForm").addEventListener("submit", handleLogin);
     $("logoutBtn").addEventListener("click", () => location.reload());
-    $("userPasswordBtn").addEventListener("click", openChangePasswordModal);
     $("manageUsersBtn").addEventListener("click", openUserManager);
     $("auditBtn").addEventListener("click", openAuditModal);
     $("reorderBtn").addEventListener("click", openReorderModal);
@@ -388,8 +253,8 @@
     $("todayBtn").addEventListener("click", setToday);
     $("searchInput").addEventListener("input", renderTable);
     $("categoryFilter").addEventListener("click", e => {
-      const button = e.target.closest("button[data-category]");
-      if (button) filterCategory(button.dataset.category);
+      const btn = e.target.closest("button[data-category]");
+      if (btn) filterCategory(btn.dataset.category);
     });
     $("itemForm").addEventListener("submit", saveItem);
     $("deleteItemBtn").addEventListener("click", deleteCurrentItem);
@@ -399,39 +264,23 @@
     $("userForm").addEventListener("submit", createAccount);
     $("closeUsersX").addEventListener("click", closeUserManager);
     $("closeUsersBtn").addEventListener("click", closeUserManager);
-    $("closeAuditX").addEventListener("click", closeAuditModal);
-    $("closeAuditBtn").addEventListener("click", closeAuditModal);
-    $("closeReorderX").addEventListener("click", closeReorderModal);
-    $("closeReorderBtn").addEventListener("click", closeReorderModal);
-    $("copyReorderBtn").addEventListener("click", copyReorderText);
-    $("changePasswordForm").addEventListener("submit", updateMyPassword);
-    $("closeChangePassX").addEventListener("click", closeChangePasswordModal);
-    $("cancelChangePassBtn").addEventListener("click", closeChangePasswordModal);
+    $("closeAuditX").addEventListener("click", () => $("auditModal").classList.add("hidden"));
+    $("closeReorderX").addEventListener("click", () => $("reorderModal").classList.add("hidden"));
+    $("closeReorderBtn").addEventListener("click", () => $("reorderModal").classList.add("hidden"));
   }
 
   async function handleLogin(e) {
     e.preventDefault();
-    const username = $("loginUser").value.trim();
-    const password = $("loginPass").value.trim();
-
-    const { data, error } = await db.rpc('verify_store_user', {
-      input_username: username,
-      input_password: password
-    });
-
-    if (error || !data || data.length === 0 || data[0].disabled) {
-      $("loginError").classList.remove("hidden");
-      return;
-    }
+    const { data, error } = await db.rpc('verify_store_user', { input_username: $("loginUser").value.trim(), input_password: $("loginPass").value.trim() });
+    if (error || !data || data.length === 0) { $("loginError").classList.remove("hidden"); return; }
 
     currentUser = data[0];
     activeLocation = currentUser.location === "All Locations" ? "Juba Depot" : currentUser.location;
-
     $("loginModal").classList.add("hidden");
     $("displayUserName").textContent = `${currentUser.name} (${currentUser.role})`;
     $("locationBadge").textContent = activeLocation;
 
-    if (currentUser.role === "Manager") {
+    if (isManager()) {
       $("managerLocationBox").classList.remove("hidden");
       $("managerLocationBox").classList.add("flex");
       $("downloadTemplateBtn").classList.remove("hidden");
@@ -441,48 +290,26 @@
       $("newItemBtn").classList.remove("hidden");
       loadLocationsDropdown();
     } else {
-      $("newItemBtn").classList.remove("hidden");
+      $("newItemBtn").classList.remove("hidden"); // Storekeeper can log added/issues on items
     }
-
     await logAudit("LOGIN", `User signed in: ${currentUser.username}`);
     loadCloudData();
   }
 
   async function loadCloudData() {
     const currentDate = dateKey();
-    const { data, error } = await db
-      .from('inventory_entries')
-      .select('*')
-      .eq('location', activeLocation)
-      .eq('entry_date', currentDate);
-
-    if (error) {
-      console.error("Error loading cloud data:", error.message);
-      return;
-    }
+    const { data } = await db.from('inventory_entries').select('*').eq('location', activeLocation).eq('entry_date', currentDate);
 
     if (!data || data.length === 0) {
       const initialEntries = defaultCatalog.map(item => ({
-        location: activeLocation,
-        entry_date: currentDate,
-        item_code: item.item_code,
-        description: item.description,
-        category: item.category, // Explicitly mapped from default catalog
-        unit: item.unit,
-        opening: 0,
-        added: 0,
-        issues: 0,
-        cost: item.cost,
-        price: item.price,
-        comments: "",
-        updated_at: new Date().toISOString()
+        location: activeLocation, entry_date: currentDate, item_code: item.item_code,
+        description: item.description, category: item.category, unit: item.unit,
+        opening: 0, added: 0, issues: 0, cost: item.cost, price: item.price, comments: "", updated_at: new Date().toISOString()
       }));
-
       await db.from('inventory_entries').upsert(initialEntries, { onConflict: ['location', 'entry_date', 'item_code'] });
       loadCloudData();
       return;
     }
-
     currentItems = data || [];
     renderTable();
     updateKPIs();
@@ -491,7 +318,7 @@
 
   async function saveItem(e) {
     e.preventDefault();
-    const itemCode = $("itemId").value.trim() || ("ITM-" + Math.floor(1000 + Math.random() * 9000));
+    const itemCode = $("itemId").value.trim();
     const description = $("itemDescription").value.trim();
     const category = $("itemCategory").value.trim();
     const unit = $("itemSpec").value.trim();
@@ -502,150 +329,46 @@
     const price = parseFloat($("itemPrice").value) || 0;
     const comments = $("itemComments").value.trim();
 
-    // Strict validation to prevent generic or 'general' categorization
-    if (!description || description.toLowerCase() === 'general') {
-      alert("Error: Please provide a valid, specific item description.");
-      return;
-    }
-    if (!category || category.toLowerCase() === 'general') {
-      alert("Error: Please select a proper specific category (e.g., Dry Food Items, Soft Drinks, etc.).");
-      return;
-    }
-
     const { error } = await db.rpc('secure_upsert_inventory', {
-      p_username: currentUser.username,
-      p_location: activeLocation,
-      p_entry_date: dateKey(),
-      p_item_code: itemCode,
-      p_description: description,
-      p_category: category,
-      p_unit: unit,
-      p_opening: opening,
-      p_added: added,
-      p_issues: issues,
-      p_cost: cost,
-      p_price: price,
-      p_comments: comments
+      p_username: currentUser.username, p_location: activeLocation, p_entry_date: dateKey(),
+      p_item_code: itemCode, p_description: description, p_category: category, p_unit: unit,
+      p_opening: opening, p_added: added, p_issues: issues, p_cost: cost, p_price: price, p_comments: comments
     });
 
-    if (error) {
-      alert("Security/Save Error: " + error.message);
-      return;
-    }
-
-    await logAudit("SAVE_ITEM", `Saved item entry: ${description} (${category})`);
+    if (error) { alert("Save Error: " + error.message); return; }
+    await logAudit("SAVE_ITEM", `Saved item: ${description}`);
     closeItemModal();
     loadCloudData();
-  }
-
-  async function handleExcelUpload(e) {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = async function(event) {
-      try {
-        const data = new Uint8Array(event.target.result);
-        const workbook = XLSX.read(data, { type: 'array' });
-        const rows = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
-
-        if (!rows.length) {
-          alert("The uploaded Excel file contains no rows.");
-          return;
-        }
-
-        let importedCount = 0;
-        const currentDate = dateKey();
-
-        for (let row of rows) {
-          const code = String(row['Item Code'] || row['item_code'] || ('ITM-' + Math.floor(1000 + Math.random() * 9000))).trim();
-          const description = String(row['Item Description'] || row['description'] || '').trim();
-          const category = String(row['Category'] || row['category'] || '').trim();
-          const unit = String(row['Unit'] || row['unit'] || 'Pc').trim();
-          
-          const opening = parseFloat(row['Opening'] || row['opening'] || 0) || 0;
-          const added = parseFloat(row['Added'] || row['added'] || 0) || 0;
-          const issues = parseFloat(row['Issues'] || row['issues'] || 0) || 0;
-          const cost = parseFloat(row['Cost Price'] || row['cost'] || 0) || 0;
-          const price = parseFloat(row['Sale Price'] || row['price'] || 0) || 0;
-          const comments = String(row['Comments'] || row['comments'] || '').trim();
-
-          if (!description || description.toLowerCase() === 'general') continue;
-          if (!category || category.toLowerCase() === 'general') continue;
-
-          await db.rpc('secure_upsert_inventory', {
-            p_username: currentUser.username,
-            p_location: activeLocation,
-            p_entry_date: currentDate,
-            p_item_code: code,
-            p_description: description,
-            p_category: category,
-            p_unit: unit,
-            p_opening: opening,
-            p_added: added,
-            p_issues: issues,
-            p_cost: cost,
-            p_price: price,
-            p_comments: comments
-          });
-          importedCount++;
-        }
-
-        alert(`Successfully imported ${importedCount} items from Excel!`);
-        await logAudit("EXCEL_IMPORT", `Imported ${importedCount} rows for ${activeLocation}`);
-        loadCloudData();
-      } catch (err) {
-        console.error("Excel Parsing Error:", err);
-        alert("Failed to parse Excel file.");
-      } finally {
-        $("excelFileInput").value = "";
-      }
-    };
-    reader.readAsArrayBuffer(file);
   }
 
   function renderTable() {
     const tbody = $("tableBody");
     tbody.innerHTML = "";
     const search = $("searchInput").value.toLowerCase();
+    const filtered = currentItems.filter(i => (currentActiveCategory === "All" || i.category === currentActiveCategory) && (i.description.toLowerCase().includes(search) || i.item_code.toLowerCase().includes(search)));
 
-    const filtered = currentItems.filter(item => {
-      const matchCat = currentActiveCategory === "All" || item.category === currentActiveCategory;
-      const matchSearch = item.description.toLowerCase().includes(search) || item.item_code.toLowerCase().includes(search);
-      return matchCat && matchSearch;
-    });
-
-    if (filtered.length === 0) {
-      $("emptyState").classList.remove("hidden");
-      return;
-    }
+    if (filtered.length === 0) { $("emptyState").classList.remove("hidden"); return; }
     $("emptyState").classList.add("hidden");
 
     filtered.forEach(item => {
-      const opening = parseFloat(item.opening) || 0;
-      const added = parseFloat(item.added) || 0;
-      const issues = parseFloat(item.issues) || 0;
-      const cost = parseFloat(item.cost) || 0;
-      const price = parseFloat(item.price) || 0;
-      const closing = opening + added - issues;
-      const revenue = issues * price;
-
+      const closing = (parseFloat(item.opening)||0) + (parseFloat(item.added)||0) - (parseFloat(item.issues)||0);
+      const revenue = (parseFloat(item.issues)||0) * (parseFloat(item.price)||0);
       const tr = document.createElement("tr");
       tr.className = "hover:bg-slate-50 transition";
       tr.innerHTML = `
         <td class="p-3 font-mono text-slate-500">${item.item_code}</td>
         <td class="p-3 font-bold text-slate-800">${item.description}</td>
-        <td class="p-3"><span class="bg-slate-100 px-2 py-1 rounded-md text-slate-700">${item.category}</span></td>
+        <td class="p-3"><span class="bg-slate-100 px-2 py-1 rounded text-slate-700">${item.category}</span></td>
         <td class="p-3 text-center">${item.unit}</td>
-        <td class="p-3 text-center">${opening}</td>
-        <td class="p-3 text-center">${added}</td>
-        <td class="p-3 text-center">${issues}</td>
-        <td class="p-3 text-center font-bold ${closing <= 5 ? 'text-rose-600 bg-rose-50 rounded' : 'text-slate-800'}">${closing}</td>
-        <td class="p-3 text-right">$${cost.toFixed(2)}</td>
-        <td class="p-3 text-right">$${price.toFixed(2)}</td>
-        <td class="p-3 text-right font-semibold text-emerald-600">$${revenue.toFixed(2)}</td>
-        <td class="p-3 text-slate-500 truncate max-w-xs">${item.comments || '--'}</td>
-        <td class="p-3 text-center"><button class="edit-btn text-brand-600 hover:text-brand-800 font-semibold px-2 py-1 rounded">Edit</button></td>
+        <td class="p-3 text-center">${item.opening}</td>
+        <td class="p-3 text-center text-brand-600 font-bold">${item.added}</td>
+        <td class="p-3 text-center text-amber-600 font-bold">${item.issues}</td>
+        <td class="p-3 text-center font-bold ${closing <= 5 ? 'text-rose-600 bg-rose-50' : ''}">${closing}</td>
+        <td class="p-3 text-right">$${parseFloat(item.cost).toFixed(2)}</td>
+        <td class="p-3 text-right">$${parseFloat(item.price).toFixed(2)}</td>
+        <td class="p-3 text-right text-emerald-600 font-semibold">$${revenue.toFixed(2)}</td>
+        <td class="p-3 text-slate-500">${item.comments || '--'}</td>
+        <td class="p-3 text-center"><button class="edit-btn text-brand-600 hover:text-brand-800 font-semibold px-2 py-1">${isManager() ? 'Edit' : 'Log / Issue'}</button></td>
       `;
       tr.querySelector(".edit-btn").addEventListener("click", () => openEditItemModal(item));
       tbody.appendChild(tr);
@@ -653,26 +376,14 @@
   }
 
   function updateKPIs() {
-    let totalItems = currentItems.length;
-    let totalIssues = 0;
-    let dailyRevenue = 0;
-    let grossProfit = 0;
-    let lowStockCount = 0;
-
-    currentItems.forEach(item => {
-      const opening = parseFloat(item.opening) || 0;
-      const added = parseFloat(item.added) || 0;
-      const issues = parseFloat(item.issues) || 0;
-      const cost = parseFloat(item.cost) || 0;
-      const price = parseFloat(item.price) || 0;
-      const closing = opening + added - issues;
-
-      totalIssues += issues;
-      dailyRevenue += issues * price;
-      grossProfit += issues * (price - cost);
+    let totalItems = currentItems.length, totalIssues = 0, dailyRevenue = 0, grossProfit = 0, lowStockCount = 0;
+    currentItems.forEach(i => {
+      const closing = (parseFloat(i.opening)||0) + (parseFloat(i.added)||0) - (parseFloat(i.issues)||0);
+      totalIssues += parseFloat(i.issues)||0;
+      dailyRevenue += (parseFloat(i.issues)||0) * (parseFloat(i.price)||0);
+      grossProfit += (parseFloat(i.issues)||0) * ((parseFloat(i.price)||0) - (parseFloat(i.cost)||0));
       if (closing <= 5) lowStockCount++;
     });
-
     $("statTotalItems").textContent = totalItems;
     $("statTotalIssues").textContent = totalIssues;
     $("statDailyRevenue").textContent = `$${dailyRevenue.toFixed(2)}`;
@@ -682,76 +393,30 @@
 
   function updateCategoryChart() {
     const ctx = $("categoryChart").getContext("2d");
-    const categories = ["Dry Food Items", "Soft Drinks", "Alcoholic", "Frozen", "Fresh Food Items"];
-    const issuesData = categories.map(cat => {
-      return currentItems.filter(i => i.category === cat).reduce((sum, i) => sum + (parseFloat(i.issues) || 0), 0);
-    });
-
+    const cats = ["Dry Food Items", "Soft Drinks", "Alcoholic", "Frozen", "Fresh Food Items"];
+    const data = cats.map(c => currentItems.filter(i => i.category === c).reduce((s, i) => s + (parseFloat(i.issues)||0), 0));
     if (chartInstance) chartInstance.destroy();
-    chartInstance = new Chart(ctx, {
-      type: 'bar',
-      data: {
-        labels: categories,
-        datasets: [{
-          label: 'Issues Quantity',
-          data: issuesData,
-          backgroundColor: '#3b82f6',
-          borderRadius: 6
-        }]
-      },
-      options: { responsive: true, maintainAspectRatio: false }
-    });
-  }
-
-  function updateDayLabel() {
-    const d = new Date($("selectedDate").value);
-    $("dayLabel").textContent = d.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' });
-  }
-
-  function changeDate(days) {
-    const d = new Date($("selectedDate").value);
-    d.setDate(d.getDate() + days);
-    $("selectedDate").value = localDateString(d);
-    updateDayLabel();
-    loadCloudData();
-  }
-
-  function setToday() {
-    $("selectedDate").value = localDateString();
-    updateDayLabel();
-    loadCloudData();
-  }
-
-  function filterCategory(cat) {
-    currentActiveCategory = cat;
-    document.querySelectorAll(".cat-btn").forEach(b => {
-      b.classList.remove("bg-brand-600", "text-white");
-      b.classList.add("bg-slate-100", "text-slate-700");
-    });
-    event.currentTarget.classList.remove("bg-slate-100", "text-slate-700");
-    event.currentTarget.classList.add("bg-brand-600", "text-white");
-    renderTable();
+    chartInstance = new Chart(ctx, { type: 'bar', data: { labels: cats, datasets: [{ label: 'Issues', data, backgroundColor: '#3b82f6', borderRadius: 6 }] }, options: { responsive: true, maintainAspectRatio: false } });
   }
 
   function openNewItemModal() {
-    $("modalTitle").textContent = "Add New Inventory Item";
-    $("itemId").value = "ITM-" + Math.floor(1000 + Math.random() * 9000);
-    $("itemDescription").value = "";
-    $("itemCategory").value = "";
-    $("itemSpec").value = "";
-    $("itemOpening").value = "0";
-    $("itemAdded").value = "0";
-    $("itemIssues").value = "0";
-    $("itemCost").value = "0.00";
-    $("itemPrice").value = "0.00";
-    $("itemComments").value = "";
+    if (!isManager()) { alert("Only Managers can create new master items."); return; }
+    $("modalTitle").textContent = "Add New Item";
+    // Generate sequential ID starting from 001 onwards
+    const nextIdNum = currentItems.length + 1;
+    $("itemId").value = String(nextIdNum).padStart(3, '0');
+    
+    // Enable all fields for Manager
+    ["itemDescription", "itemCategory", "itemSpec", "itemOpening", "itemCost", "itemPrice"].forEach(id => $(id).removeAttribute("disabled"));
+    $("itemDescription").value = ""; $("itemCategory").value = ""; $("itemSpec").value = "";
+    $("itemOpening").value = "0"; $("itemAdded").value = "0"; $("itemIssues").value = "0";
+    $("itemCost").value = "0.00"; $("itemPrice").value = "0.00"; $("itemComments").value = "";
     $("deleteItemBtn").classList.add("hidden");
-    $("itemModal").classList.remove("hidden");
-    $("itemModal").classList.add("flex");
+    $("itemModal").classList.remove("hidden"); $("itemModal").classList.add("flex");
   }
 
   function openEditItemModal(item) {
-    $("modalTitle").textContent = "Edit Item Entry";
+    $("modalTitle").textContent = isManager() ? "Edit Item & Details" : "Log Stock Added / Issues (Storekeeper)";
     $("itemId").value = item.item_code;
     $("itemDescription").value = item.description;
     $("itemCategory").value = item.category;
@@ -762,138 +427,101 @@
     $("itemCost").value = item.cost;
     $("itemPrice").value = item.price;
     $("itemComments").value = item.comments || "";
-    $("deleteItemBtn").classList.remove("hidden");
-    $("itemModal").classList.remove("hidden");
-    $("itemModal").classList.add("flex");
+
+    if (!isManager()) {
+      // Storekeepers can ONLY edit added, issues, and comments/transfers
+      ["itemDescription", "itemCategory", "itemSpec", "itemOpening", "itemCost", "itemPrice"].forEach(id => $(id).setAttribute("disabled", "true"));
+      $("deleteItemBtn").classList.add("hidden");
+    } else {
+      ["itemDescription", "itemCategory", "itemSpec", "itemOpening", "itemCost", "itemPrice"].forEach(id => $(id).removeAttribute("disabled"));
+      $("deleteItemBtn").classList.remove("hidden");
+    }
+    $("itemModal").classList.remove("hidden"); $("itemModal").classList.add("flex");
   }
 
-  function closeItemModal() {
-    $("itemModal").classList.add("hidden");
-    $("itemModal").classList.remove("flex");
-  }
+  function closeItemModal() { $("itemModal").classList.add("hidden"); $("itemModal").classList.remove("flex"); }
 
   async function deleteCurrentItem() {
+    if (!isManager()) return;
     const code = $("itemId").value;
-    if (!confirm(`Delete entry for ${code}?`)) return;
-
+    if (!confirm(`Delete item ${code}?`)) return;
     await db.from('inventory_entries').delete().eq('location', activeLocation).eq('entry_date', dateKey()).eq('item_code', code);
     await logAudit("DELETE_ITEM", `Deleted item ${code}`);
     closeItemModal();
     loadCloudData();
   }
 
-  async function openReorderModal() {
-    $("reorderLocationLabel").textContent = activeLocation;
-    const { data } = await db.rpc('get_low_stock_report', { p_location: activeLocation, p_threshold: 5 });
-    
-    const listDiv = $("reorderItemsList");
-    listDiv.innerHTML = "";
-    let draft = `⚠️ LOW STOCK REORDER - ${activeLocation.toUpperCase()}\nDate: ${dateKey()}\n----------------------------------------\n`;
-
-    if (!data || data.length === 0) {
-      listDiv.innerHTML = "<p class='text-slate-500'>All stock levels are optimal.</p>";
-      $("reorderDraftText.value") = "No low stock items.";
-    } else {
-      data.forEach((item, idx) => {
-        listDiv.innerHTML += `<div><b>${item.description}</b> [${item.item_code}] - Remaining: <b>${item.closing_stock} ${item.unit}</b></div>`;
-        draft += `${idx+1}. ${item.description} (${item.item_code}) - Qty Needed: ${5 - item.closing_stock} ${item.unit}\n`;
-      });
-    }
-    $("reorderDraftText").value = draft;
-    $("reorderModal").classList.remove("hidden");
-    $("reorderModal").classList.add("flex");
-  }
-
-  function closeReorderModal() { $("reorderModal").classList.add("hidden"); $("reorderModal").classList.remove("flex"); }
-  function copyReorderText() { $("reorderDraftText").select(); document.execCommand("copy"); alert("Copied to clipboard!"); }
-
-  async function openAuditModal() {
-    const { data } = await db.from('audit_logs').select('*').order('created_at', { ascending: false }).limit(50);
-    const list = $("auditList");
-    list.innerHTML = "";
-    (data || []).forEach(log => {
-      list.innerHTML += `<div class="border-b pb-1"><b>[${new Date(log.created_at).toLocaleString()}]</b> ${log.username} (${log.role}) at ${log.location}: <b>${log.action}</b> - ${log.details}</div>`;
-    });
-    $("auditModal").classList.remove("hidden");
-    $("auditModal").classList.add("flex");
-  }
-  function closeAuditModal() { $("auditModal").classList.add("hidden"); $("auditModal").classList.remove("flex"); }
-
   async function openUserManager() {
-    loadLocationsDropdown();
-    loadLocationsList();
-    loadAccountsList();
-    $("userManagerModal").classList.remove("hidden");
-    $("userManagerModal").classList.add("flex");
+    if (!isManager()) return;
+    loadLocationsDropdown(); loadLocationsList(); loadAccountsList();
+    $("userManagerModal").classList.remove("hidden"); $("userManagerModal").classList.add("flex");
   }
   function closeUserManager() { $("userManagerModal").classList.add("hidden"); $("userManagerModal").classList.remove("flex"); }
 
   async function loadLocationsDropdown() {
     const { data } = await db.from('locations').select('name');
-    const sel1 = $("locationSelector");
-    const sel2 = $("newUserLocation");
-    sel1.innerHTML = "";
-    sel2.innerHTML = "";
-    (data || []).forEach(loc => {
-      sel1.innerHTML += `<option value="${loc.name}" ${loc.name === activeLocation ? 'selected' : ''}>${loc.name}</option>`;
-      sel2.innerHTML += `<option value="${loc.name}">${loc.name}</option>`;
+    const sel1 = $("locationSelector"), sel2 = $("newUserLocation");
+    sel1.innerHTML = ""; sel2.innerHTML = "";
+    (data || []).forEach(l => {
+      sel1.innerHTML += `<option value="${l.name}" ${l.name === activeLocation ? 'selected' : ''}>${l.name}</option>`;
+      sel2.innerHTML += `<option value="${l.name}">${l.name}</option>`;
     });
     sel1.onchange = e => { activeLocation = e.target.value; $("locationBadge").textContent = activeLocation; loadCloudData(); };
   }
 
   async function loadLocationsList() {
     const { data } = await db.from('locations').select('*');
-    const div = $("locationList");
-    div.innerHTML = "";
-    (data || []).forEach(l => {
-      div.innerHTML += `<div class="flex justify-between items-center bg-slate-50 p-2 rounded text-xs font-semibold"><span>${l.name}</span></div>`;
-    });
+    const div = $("locationList"); div.innerHTML = "";
+    (data || []).forEach(l => { div.innerHTML += `<div class="flex justify-between items-center bg-slate-50 p-2 rounded text-xs font-semibold"><span>${l.name}</span></div>`; });
   }
 
   async function createLocation(e) {
     e.preventDefault();
-    const name = $("newLocationName").value.trim();
-    await db.from('locations').insert([{ name }]);
-    $("locationForm").reset();
-    loadLocationsList();
-    loadLocationsDropdown();
+    if (!isManager()) return;
+    await db.from('locations').insert([{ name: $("newLocationName").value.trim() }]);
+    $("locationForm").reset(); loadLocationsList(); loadLocationsDropdown();
   }
 
   async function loadAccountsList() {
     const { data } = await db.from('store_users').select('*');
-    const div = $("accountList");
-    div.innerHTML = "";
+    const div = $("accountList"); div.innerHTML = "";
     (data || []).forEach(u => {
-      div.innerHTML += `<div class="flex justify-between items-center bg-slate-50 p-2 rounded text-xs"><span><b>${u.username}</b> (${u.name}) - ${u.role} @ ${u.location}</span></div>`;
+      div.innerHTML += `<div class="flex justify-between items-center bg-slate-50 p-2 rounded text-xs">
+        <span><b>${u.username}</b> (${u.name}) - ${u.role} @ ${u.location} [${u.disabled ? 'Disabled' : 'Active'}]</span>
+        ${u.username !== 'admin' ? `<button onclick="toggleUserStatus('${u.username}', ${!u.disabled})" class="px-2 py-1 rounded text-white ${u.disabled ? 'bg-emerald-600' : 'bg-rose-600'}">${u.disabled ? 'Enable' : 'Disable'}</button>` : ''}
+      </div>`;
     });
   }
 
+  window.toggleUserStatus = async function(username, disableState) {
+    if (!isManager()) return;
+    await db.from('store_users').update({ disabled: disableState }).eq('username', username);
+    loadAccountsList();
+  };
+
   async function createAccount(e) {
     e.preventDefault();
+    if (!isManager()) return;
     await db.from('store_users').insert([{
-      username: $("newUsername").value.trim(),
-      name: $("newDisplayName").value.trim(),
-      password: $("newPassword").value.trim(),
-      role: $("newUserRole").value,
-      location: $("newUserLocation").value,
-      disabled: false
+      username: $("newUsername").value.trim(), name: $("newDisplayName").value.trim(),
+      password: $("newPassword").value.trim(), role: $("newUserRole").value, location: $("newUserLocation").value, disabled: false
     }]);
-    $("userForm").reset();
-    loadAccountsList();
+    $("userForm").reset(); loadAccountsList(); alert("Account created successfully!");
   }
 
-  function openChangePasswordModal() { $("changePasswordModal").classList.remove("hidden"); $("changePasswordModal").classList.add("flex"); }
-  function closeChangePasswordModal() { $("changePasswordModal").classList.add("hidden"); $("changePasswordModal").classList.remove("flex"); }
-  async function updateMyPassword(e) {
-    e.preventDefault();
-    const cur = $("myCurrentPassword").value;
-    const nw = $("myNewPassword").value;
-    const conf = $("myConfirmPassword").value;
-    if (nw !== conf) { $("changePassError").textContent = "New passwords do not match."; $("changePassError").classList.remove("hidden"); return; }
-    
-    await db.from('store_users').update({ password: nw }).eq('username', currentUser.username);
-    alert("Password updated successfully!");
-    closeChangePasswordModal();
+  async function openAuditModal() {
+    const { data } = await db.from('audit_logs').select('*').order('created_at', { ascending: false }).limit(50);
+    const list = $("auditList"); list.innerHTML = "";
+    (data || []).forEach(l => { list.innerHTML += `<div class="border-b pb-1"><b>[${new Date(l.created_at).toLocaleString()}]</b> ${l.username} (${l.role}): <b>${l.action}</b> - ${l.details}</div>`; });
+    $("auditModal").classList.remove("hidden"); $("auditModal").classList.add("flex");
+  }
+
+  async function openReorderModal() {
+    const { data } = await db.rpc('get_low_stock_report', { p_location: activeLocation, p_threshold: 5 });
+    let draft = `⚠️ LOW STOCK REORDER - ${activeLocation.toUpperCase()}\nDate: ${dateKey()}\n----------------------------------------\n`;
+    (!data || data.length === 0) ? draft += "No low stock items." : data.forEach((i, idx) => { draft += `${idx+1}. [${i.item_code}] ${i.description} - Remaining: ${i.closing_stock} ${i.unit}\n`; });
+    $("reorderDraftText").value = draft;
+    $("reorderModal").classList.remove("hidden"); $("reorderModal").classList.add("flex");
   }
 
   function exportCSV() {
@@ -902,32 +530,21 @@
       const closing = (parseFloat(i.opening)||0) + (parseFloat(i.added)||0) - (parseFloat(i.issues)||0);
       csv += `"${i.item_code}","${i.description}","${i.category}","${i.unit}",${i.opening},${i.added},${i.issues},${closing},${i.cost},${i.price},${i.issues * i.price},"${i.comments||''}"\n`;
     });
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `Inventory_${activeLocation}_${dateKey()}.csv`;
-    a.click();
+    const a = document.createElement('a'); a.href = window.URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+    a.download = `Inventory_${activeLocation}_${dateKey()}.csv`; a.click();
   }
 
   function downloadMasterTemplate() {
-    const templateData = defaultCatalog.map(i => ({
-      "Item Code": i.item_code,
-      "Item Description": i.description,
-      "Category": i.category,
-      "Unit": i.unit,
-      "Opening": 0,
-      "Added": 0,
-      "Issues": 0,
-      "Cost Price": i.cost,
-      "Sale Price": i.price,
-      "Comments": ""
-    }));
-    const worksheet = XLSX.utils.json_to_sheet(templateData);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "MasterTemplate");
-    XLSX.writeFile(workbook, "Gas_Store_Master_Template.xlsx");
+    const templateData = defaultCatalog.map(i => ({ "Item Code": i.item_code, "Item Description": i.description, "Category": i.category, "Unit": i.unit, "Opening": 0, "Added": 0, "Issues": 0, "Cost Price": i.cost, "Sale Price": i.price, "Comments": "" }));
+    XLSX.writeFile(XLSX.utils.book_append_sheet(XLSX.utils.book_new(), XLSX.utils.json_to_sheet(templateData), "Master"), "Master_Template.xlsx");
   }
+
+  function updateDayLabel() {
+    $("dayLabel").textContent = new Date($("selectedDate").value).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' });
+  }
+  function changeDate(days) { const d = new Date($("selectedDate").value); d.setDate(d.getDate() + days); $("selectedDate").value = localDateString(d); updateDayLabel(); loadCloudData(); }
+  function setToday() { $("selectedDate").value = localDateString(); updateDayLabel(); loadCloudData(); }
+  function filterCategory(cat) { currentActiveCategory = cat; document.querySelectorAll(".cat-btn").forEach(b => { b.classList.remove("bg-brand-600", "text-white"); b.classList.add("bg-slate-100", "text-slate-700"); }); event.currentTarget.classList.remove("bg-slate-100", "text-slate-700"); event.currentTarget.classList.add("bg-brand-600", "text-white"); renderTable(); }
   </script>
 </body>
 </html>
