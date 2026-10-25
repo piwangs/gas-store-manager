@@ -278,7 +278,7 @@
   <div id="userManagerModal" class="fixed inset-0 bg-slate-900/70 hidden items-center justify-center z-50 p-4">
     <div class="bg-white rounded-xl p-6 w-full max-w-2xl max-h-[92vh] overflow-y-auto space-y-4">
       <div class="flex justify-between items-center"><h2 class="font-bold text-lg text-slate-800">Manage Store Locations & Accounts</h2><button id="closeUsersX" type="button"><i class="fa-solid fa-xmark"></i></button></div>
-      
+
       <!-- Store Locations List & Add Form -->
       <div class="space-y-2">
         <h3 class="font-bold text-sm text-slate-800">Store Locations</h3>
@@ -501,7 +501,7 @@ async function loadLocations() {
       opt.value = l.name; opt.textContent = l.name; select.appendChild(opt);
     });
     select.value = activeLocation;
-    
+
     const userLocSelect = $("newUserLocation");
     if (userLocSelect) {
       userLocSelect.replaceChildren();
@@ -578,7 +578,7 @@ async function loadCloudData() {
       .select('*')
       .eq('location', activeLocation)
       .eq('entry_date', date);
-    
+
     dailyEntries = refetched || [];
   } else {
     // Insert any missing master items into location log
