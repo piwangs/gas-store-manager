@@ -23,37 +23,23 @@
     };
   </script>
   <style>
-    /* Professional Print & PDF Styles */
     @media print {
       @page { size: A4 landscape; margin: 1cm; }
       body { background: white !important; color: #0f172a !important; font-size: 10pt; font-family: sans-serif; }
-      
-      /* Hide all non-printable UI */
-      header, #loginModal, #filtersPanel, #managerLocationBox, #itemModal, #reorderModal, button, .no-print { 
+      header, #loginModal, #filtersPanel, #managerLocationBox, #itemModal, #reorderModal, #userManagerModal, #editUserModal, button, .no-print { 
         display: none !important; 
       }
-      
       main { max-width: none !important; padding: 0 !important; margin: 0 !important; }
       .shadow-sm, .shadow-lg, .rounded-xl, .rounded-2xl { box-shadow: none !important; border-radius: 0 !important; }
-      
-      /* Hide Action column in table during print */
       #inventoryTable th:last-child, #inventoryTable td:last-child { display: none !important; }
-      
-      /* Print Header */
       .print-header { display: block !important; margin-bottom: 20px; border-bottom: 2px solid #0f172a; padding-bottom: 10px; }
-      
-      /* Table formatting for print */
       table { width: 100% !important; border-collapse: collapse !important; page-break-inside: auto; margin-top: 10px; }
       tr { page-break-inside: avoid; page-break-after: auto; }
       th, td { border: 1px solid #64748b !important; padding: 5px 6px !important; color: #0f172a !important; text-align: left; }
       th { background-color: #e2e8f0 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; font-weight: bold; }
-      
-      /* Signature Section */
       .print-signatures { display: flex !important; justify-content: space-between; margin-top: 50px; page-break-inside: avoid; }
       .signature-box { width: 30%; border-top: 1px solid #0f172a; text-align: center; padding-top: 5px; font-weight: bold; font-size: 9pt; }
     }
-
-    /* Hidden by default on screen */
     .print-header { display: none; }
     .print-signatures { display: none; }
   </style>
@@ -103,6 +89,7 @@
           <button id="logoutBtn" type="button" class="text-slate-400 hover:text-rose-400 ml-1 transition" title="Logout"><i class="fa-solid fa-right-from-bracket"></i></button>
         </div>
         <button id="reorderBtn" type="button" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-2 rounded-lg text-xs font-semibold border border-slate-700 transition"><i class="fa-solid fa-cart-flatbed text-amber-400 mr-1"></i>Low Stock Report</button>
+        <button id="manageUsersBtn" type="button" class="hidden bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-lg text-xs font-semibold shadow-md transition"><i class="fa-solid fa-users-gear mr-1"></i>Stores & Accounts</button>
         <button id="exportBtn" type="button" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-2 rounded-lg text-xs border border-slate-700 transition"><i class="fa-solid fa-file-csv text-emerald-400 mr-1"></i>Export CSV</button>
         <button id="printBtn" type="button" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-2 rounded-lg text-xs border border-slate-700 transition"><i class="fa-solid fa-print text-amber-400 mr-1"></i>Print</button>
         <button id="newItemBtn" type="button" class="hidden bg-brand-600 hover:bg-brand-700 text-white px-3.5 py-2 rounded-lg text-xs font-semibold shadow-md transition"><i class="fa-solid fa-plus mr-1"></i>New Item</button>
@@ -113,7 +100,7 @@
   <!-- Main Content -->
   <main class="flex-grow max-w-7xl w-full mx-auto px-4 py-6 space-y-6">
     
-    <!-- Printable Header Block (Only visible when printing) -->
+    <!-- Printable Header Block -->
     <div class="print-header">
       <div class="flex justify-between items-center">
         <div>
@@ -193,7 +180,7 @@
       <div id="emptyState" class="hidden p-8 text-center text-sm text-slate-500">No inventory items found for this date/location.</div>
     </section>
 
-    <!-- Printable Signature Block (Only visible when printing) -->
+    <!-- Printable Signature Block -->
     <div class="print-signatures">
       <div class="signature-box">Storekeeper Signature</div>
       <div class="signature-box">Warehouse Manager Signature</div>
@@ -210,7 +197,6 @@
       </div>
       <form id="itemForm" class="p-6 space-y-4">
         
-        <!-- Targeted Location Selection for Manager -->
         <div id="modalLocationWrapper" class="bg-amber-50 border border-amber-200 p-3 rounded-lg">
           <label class="block text-xs font-bold text-amber-900 mb-1"><i class="fa-solid fa-store mr-1 text-amber-600"></i>Store Location for Quantity Edits:</label>
           <select id="itemTargetLocation" class="w-full bg-white border border-amber-300 rounded-lg px-3 py-1.5 text-xs font-bold text-slate-800 focus:ring-amber-500"></select>
@@ -257,6 +243,85 @@
     </div>
   </div>
 
+  <!-- Store Locations & Accounts Management Modal -->
+  <div id="userManagerModal" class="fixed inset-0 bg-slate-900/70 hidden items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-xl p-6 w-full max-w-2xl max-h-[92vh] overflow-y-auto space-y-4">
+      <div class="flex justify-between items-center"><h2 class="font-bold text-lg text-slate-800">Manage Store Locations & Accounts</h2><button id="closeUsersX" type="button"><i class="fa-solid fa-xmark"></i></button></div>
+      
+      <div class="space-y-2">
+        <h3 class="font-bold text-sm text-slate-800">Store Locations</h3>
+        <form id="locationForm" class="flex flex-col sm:flex-row gap-2">
+          <input id="newLocationName" required maxlength="80" placeholder="New location name (e.g. Wau Depot)" class="border rounded-lg p-2 flex-1 text-sm">
+          <button type="submit" class="bg-brand-600 hover:bg-brand-700 text-white rounded-lg px-4 py-2 text-sm font-semibold">Add Store Location</button>
+        </form>
+        <div id="locationList" class="space-y-1.5 pt-2"></div>
+      </div>
+
+      <hr class="my-4">
+
+      <h3 class="font-bold text-sm text-slate-800">Create Account (Manager or Storekeeper)</h3>
+      <form id="userForm" class="grid sm:grid-cols-2 gap-3">
+        <input id="newUsername" required minlength="3" maxlength="40" autocomplete="off" placeholder="Username" class="border rounded-lg p-2 text-sm">
+        <input id="newDisplayName" required maxlength="80" placeholder="Full name" class="border rounded-lg p-2 text-sm">
+        <input id="newPassword" required minlength="8" type="password" autocomplete="new-password" placeholder="Password (8+ chars)" class="border rounded-lg p-2 text-sm">
+        <select id="newUserRole" required class="border rounded-lg p-2 text-sm font-semibold">
+          <option value="Storekeeper">Storekeeper</option>
+          <option value="Manager">Manager</option>
+        </select>
+        <select id="newUserLocation" required class="border rounded-lg p-2 text-sm sm:col-span-2"></select>
+        <button type="submit" class="sm:col-span-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg p-2 font-semibold text-sm shadow-md">Create Account</button>
+      </form>
+
+      <hr class="my-4">
+
+      <h3 class="font-bold text-sm text-slate-800">Existing Accounts & Privileges</h3>
+      <div id="accountList" class="space-y-2 text-sm"></div>
+      <button id="closeUsersBtn" type="button" class="w-full bg-slate-100 rounded-lg p-2 text-sm font-semibold mt-2">Close</button>
+    </div>
+  </div>
+
+  <!-- Edit User Privileges Modal -->
+  <div id="editUserModal" class="fixed inset-0 bg-slate-900/80 hidden items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl space-y-4">
+      <div class="flex justify-between items-center border-b pb-3">
+        <h3 class="font-bold text-base text-slate-800"><i class="fa-solid fa-user-pen text-purple-600 mr-2"></i>Edit User Privileges</h3>
+        <button id="closeEditUserX" type="button"><i class="fa-solid fa-xmark text-lg"></i></button>
+      </div>
+      <form id="editUserForm" class="space-y-3">
+        <input type="hidden" id="editUserId">
+        <div>
+          <label class="block text-xs font-semibold mb-1 text-slate-600">Username</label>
+          <input id="editUsernameDisplay" disabled class="w-full bg-slate-100 border rounded-lg px-3 py-2 text-xs font-mono text-slate-500">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold mb-1 text-slate-600">Full Name</label>
+          <input id="editUserFullName" required class="w-full border rounded-lg px-3 py-2 text-xs">
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block text-xs font-semibold mb-1 text-slate-600">Role</label>
+            <select id="editUserRole" required class="w-full border rounded-lg px-3 py-2 text-xs font-semibold">
+              <option value="Storekeeper">Storekeeper</option>
+              <option value="Manager">Manager</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold mb-1 text-slate-600">Assigned Location</label>
+            <select id="editUserLocation" required class="w-full border rounded-lg px-3 py-2 text-xs font-semibold"></select>
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold mb-1 text-slate-600">New Password (leave blank to keep current)</label>
+          <input id="editUserPassword" type="password" placeholder="Min 8 characters" class="w-full border rounded-lg px-3 py-2 text-xs">
+        </div>
+        <div class="flex justify-end gap-2 pt-2">
+          <button id="cancelEditUserBtn" type="button" class="bg-slate-100 hover:bg-slate-200 px-4 py-2 rounded-lg text-xs font-semibold">Cancel</button>
+          <button type="submit" class="bg-purple-600 hover:bg-purple-700 text-white px-5 py-2 rounded-lg text-xs font-semibold shadow-md">Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
 <script>
 "use strict";
 
@@ -300,7 +365,6 @@ function bindEvents() {
   });
   $("exportBtn").addEventListener("click", exportCSV);
   $("printBtn").addEventListener("click", () => {
-    // Populate dynamic print header info before calling browser print dialog
     $("printLocationName").textContent = activeLocation;
     $("printDateValue").textContent = dateKey();
     $("printUserName").textContent = currentUser ? `${currentUser.name} (${currentUser.role})` : 'System';
@@ -308,6 +372,7 @@ function bindEvents() {
   });
   $("newItemBtn").addEventListener("click", openNewItemModal);
   $("reorderBtn").addEventListener("click", openReorderModal);
+  $("manageUsersBtn").addEventListener("click", openUserManager);
   $("selectedDate").addEventListener("change", loadCloudData);
   $("prevDateBtn").addEventListener("click", () => changeDate(-1));
   $("nextDateBtn").addEventListener("click", () => changeDate(1));
@@ -323,6 +388,14 @@ function bindEvents() {
   $("closeReorderX").addEventListener("click", closeReorderModal);
   $("closeReorderBtn").addEventListener("click", closeReorderModal);
   $("itemTargetLocation").addEventListener("change", loadStockDataForModalLocation);
+
+  $("locationForm").addEventListener("submit", createLocation);
+  $("userForm").addEventListener("submit", createAccount);
+  $("closeUsersX").addEventListener("click", closeUserManager);
+  $("closeUsersBtn").addEventListener("click", closeUserManager);
+  $("editUserForm").addEventListener("submit", saveUserEdits);
+  $("closeEditUserX").addEventListener("click", closeEditUserModal);
+  $("cancelEditUserBtn").addEventListener("click", closeEditUserModal);
 }
 
 async function handleLogin(e) {
@@ -351,10 +424,12 @@ async function handleLogin(e) {
     $("managerLocationBox").classList.remove("hidden");
     $("managerLocationBox").classList.add("flex");
     $("newItemBtn").classList.remove("hidden");
+    $("manageUsersBtn").classList.remove("hidden");
   } else {
     activeLocation = currentUser.location;
     $("managerLocationBox").classList.add("hidden");
     $("newItemBtn").classList.add("hidden");
+    $("manageUsersBtn").classList.add("hidden");
   }
 
   $("locationBadge").textContent = activeLocation;
@@ -379,6 +454,30 @@ async function loadLocations() {
       const opt = document.createElement("option");
       opt.value = name; opt.textContent = name; modalLocSelect.appendChild(opt);
     });
+
+    const newUserLocSelect = $("newUserLocation");
+    if (newUserLocSelect) {
+      newUserLocSelect.replaceChildren();
+      allLocationsList.forEach(name => {
+        const opt = document.createElement("option");
+        opt.value = name; opt.textContent = name; newUserLocSelect.appendChild(opt);
+      });
+      const optAll = document.createElement("option");
+      optAll.value = "All Locations"; optAll.textContent = "All Locations";
+      newUserLocSelect.appendChild(optAll);
+    }
+
+    const editUserLocSelect = $("editUserLocation");
+    if (editUserLocSelect) {
+      editUserLocSelect.replaceChildren();
+      allLocationsList.forEach(name => {
+        const opt = document.createElement("option");
+        opt.value = name; opt.textContent = name; editUserLocSelect.appendChild(opt);
+      });
+      const optAll = document.createElement("option");
+      optAll.value = "All Locations"; optAll.textContent = "All Locations";
+      editUserLocSelect.appendChild(optAll);
+    }
   }
 }
 
@@ -695,7 +794,7 @@ function updateDayLabel() {
 }
 
 async function openReorderModal() {
-  const { data, error } = await db.rpc('get_low_stock_report', {
+  const { data } = await db.rpc('get_low_stock_report', {
     p_location: activeLocation,
     p_threshold: 5
   });
@@ -721,6 +820,168 @@ async function openReorderModal() {
 function closeReorderModal() {
   $("reorderModal").classList.add("hidden");
   $("reorderModal").classList.remove("flex");
+}
+
+// Store & Account Manager functions
+async function openUserManager() {
+  if (!isManager()) return;
+  await loadLocationsListModal();
+  await loadAccountsListModal();
+  $("userManagerModal").classList.remove("hidden");
+  $("userManagerModal").classList.add("flex");
+}
+
+function closeUserManager() {
+  $("userManagerModal").classList.add("hidden");
+  $("userManagerModal").classList.remove("flex");
+}
+
+async function loadLocationsListModal() {
+  const { data } = await db.from('locations').select('*').order('name');
+  const container = $("locationList");
+  container.replaceChildren();
+
+  if (data) {
+    data.forEach(loc => {
+      const div = document.createElement("div");
+      div.className = "flex justify-between items-center bg-slate-50 border p-2 rounded-lg text-xs";
+      div.innerHTML = `
+        <span class="font-bold">${loc.name}</span>
+        <button onclick="deleteLocation('${loc.name}')" class="text-rose-600 hover:underline font-semibold"><i class="fa-solid fa-trash mr-1"></i>Delete</button>
+      `;
+      container.appendChild(div);
+    });
+  }
+}
+
+async function createLocation(e) {
+  e.preventDefault();
+  if (!isManager()) return;
+  const name = $("newLocationName").value.trim();
+  if (!name) return;
+
+  const { error } = await db.from('locations').insert([{ name }]);
+  if (error) {
+    alert("Location already exists or error occurred.");
+    return;
+  }
+
+  $("newLocationName").value = "";
+  await loadLocations();
+  await loadLocationsListModal();
+}
+
+async function deleteLocation(name) {
+  if (!isManager()) return;
+  if (confirm(`Are you sure you want to delete store location "${name}"?`)) {
+    await db.from('locations').delete().eq('name', name);
+    await loadLocations();
+    await loadLocationsListModal();
+  }
+}
+
+async function loadAccountsListModal() {
+  const { data } = await db.from('store_users').select('*').order('username');
+  const container = $("accountList");
+  container.replaceChildren();
+
+  if (data) {
+    data.forEach(u => {
+      const div = document.createElement("div");
+      div.className = "flex justify-between items-center bg-slate-50 border p-2 rounded-lg text-xs";
+      div.innerHTML = `
+        <div><b>${u.username}</b> (${u.name}) - <span class="text-brand-600">${u.role}</span> @ <span class="font-semibold">${u.location}</span></div>
+        <div class="flex items-center gap-2">
+          <button onclick="openEditUserModal(${u.id})" class="bg-purple-100 hover:bg-purple-200 text-purple-800 px-2 py-1 rounded font-bold"><i class="fa-solid fa-pen mr-1"></i>Edit</button>
+          ${u.username !== 'admin' ? `<button onclick="toggleUser(${u.id}, ${u.disabled})" class="${u.disabled ? 'text-emerald-600' : 'text-rose-600'} font-bold hover:underline">${u.disabled ? 'Enable' : 'Disable'}</button>` : ''}
+        </div>
+      `;
+      container.appendChild(div);
+    });
+  }
+}
+
+async function createAccount(e) {
+  e.preventDefault();
+  if (!isManager()) return;
+  const username = $("newUsername").value.trim();
+  const name = $("newDisplayName").value.trim();
+  const password = $("newPassword").value.trim();
+  const role = $("newUserRole").value;
+  const location = $("newUserLocation").value;
+
+  const { error } = await db.from('store_users').insert([{
+    username, name, password, role, location, disabled: false
+  }]);
+
+  if (error) {
+    alert("Username already exists or error occurred.");
+    return;
+  }
+
+  $("newUsername").value = "";
+  $("newDisplayName").value = "";
+  $("newPassword").value = "";
+  await loadAccountsListModal();
+}
+
+async function toggleUser(id, currentStatus) {
+  if (!isManager()) return;
+  await db.from('store_users').update({ disabled: !currentStatus }).eq('id', id);
+  await loadAccountsListModal();
+}
+
+async function openEditUserModal(userId) {
+  if (!isManager()) return;
+  const { data, error } = await db.from('store_users').select('*').eq('id', userId).single();
+  if (error || !data) {
+    alert("Could not load user details.");
+    return;
+  }
+
+  $("editUserId").value = data.id;
+  $("editUsernameDisplay").value = data.username;
+  $("editUserFullName").value = data.name;
+  $("editUserRole").value = data.role;
+  $("editUserLocation").value = data.location;
+  $("editUserPassword").value = "";
+
+  $("editUserModal").classList.remove("hidden");
+  $("editUserModal").classList.add("flex");
+}
+
+function closeEditUserModal() {
+  $("editUserModal").classList.add("hidden");
+  $("editUserModal").classList.remove("flex");
+}
+
+async function saveUserEdits(e) {
+  e.preventDefault();
+  if (!isManager()) return;
+  const id = Number($("editUserId").value);
+  const name = $("editUserFullName").value.trim();
+  const role = $("editUserRole").value;
+  const location = $("editUserLocation").value;
+  const newPassword = $("editUserPassword").value.trim();
+
+  const updatePayload = { name, role, location };
+  if (newPassword) {
+    if (newPassword.length < 8) {
+      alert("Password must be at least 8 characters long.");
+      return;
+    }
+    updatePayload.password = newPassword;
+  }
+
+  const { error } = await db.from('store_users').update(updatePayload).eq('id', id);
+  if (error) {
+    alert("Error updating user privileges.");
+    return;
+  }
+
+  closeEditUserModal();
+  await loadAccountsListModal();
+  alert("User account updated successfully!");
 }
 
 function exportCSV() {
