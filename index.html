@@ -230,7 +230,7 @@
         </div>
         <div><label class="block text-xs font-semibold mb-1 text-slate-600">Comments / Transfers</label><input id="itemComments" maxlength="300" class="w-full border rounded-lg px-3 py-2 text-xs" placeholder="Notes..."></div>
         <div class="flex justify-between items-center pt-2">
-          <button id="deleteItemBtn" type="button" class="hidden bg-rose-600 hover:bg-rose-700 text-white px-3 py-2 rounded-lg text-xs font-semibold transition"><i class="fa-solid fa-trash mr-1"></i>Delete Globally</button>
+          <button id="deleteItemBtn" type="button" class="hidden bg-rose-600 hover:bg-rose-700 text-white px-3 py-2 rounded-lg text-xs font-semibold transition"><i class="fa-solid fa-trash mr-1"></i>Delete for This Location</button>
           <div class="flex gap-2 ml-auto">
             <button id="cancelItemBtn" type="button" class="bg-slate-100 hover:bg-slate-200 px-4 py-2 rounded-lg text-xs font-semibold">Cancel</button>
             <button type="submit" class="bg-brand-600 hover:bg-brand-700 text-white px-5 py-2 rounded-lg text-xs font-semibold shadow-md">Save Log / Entry</button>
@@ -581,7 +581,6 @@ async function loadCloudData() {
 
     dailyEntries = refetched || [];
   } else {
-    // Insert any missing master items into location log
     const existingCodes = new Set(dailyEntries.map(e => e.item_code));
     const missingMaster = masterItems.filter(m => !existingCodes.has(m.item_code));
     if (missingMaster.length > 0) {
@@ -603,7 +602,6 @@ async function loadCloudData() {
     }
   }
 
-  // 3. Map values using the SQL view data structure
   const masterMap = new Map(masterItems.map(m => [m.item_code, m]));
 
   currentItems = dailyEntries.map(entry => {
@@ -845,12 +843,13 @@ function closeItemModal() {
 
 async function saveItem(e) {
   e.preventDefault();
+
   const entryId = Number($("editEntryId").value);
   const manager = isManager();
   const itemCode = $("itemId").value.trim();
 
   if (manager) {
-    await db.from('master_items').upsert([{
+    const { error: masterError } = await db.from('master_items').upsert([{
       item_code: itemCode,
       description: $("itemDescription").value.trim(),
       category: $("itemCategory").value,
@@ -859,6 +858,11 @@ async function saveItem(e) {
       price: Number($("itemPrice").value) || 0,
       updated_at: new Date().toISOString()
     }]);
+
+    if (masterError) {
+      alert("Unable to update item master record.");
+      return;
+    }
   }
 
   const stockPayload = {
@@ -873,13 +877,35 @@ async function saveItem(e) {
   }
 
   if (entryId) {
-    await db.from('inventory_entries').update(stockPayload).eq('id', entryId);
+    const { data, error } = await db.from('inventory_entries')
+      .update(stockPayload)
+      .eq('id', entryId)
+      .eq('location', activeLocation)
+      .select();
+
+    if (error) {
+      alert("This quantity can only be edited for the current location.");
+      return;
+    }
+
+    if (!data || data.length === 0) {
+      alert("No stock record found for this item in the current location.");
+      return;
+    }
+
     await logAudit(manager ? "Update Item" : "Log Stock", `Updated item ${itemCode} at ${activeLocation}`);
   } else if (manager) {
     stockPayload.location = activeLocation;
     stockPayload.entry_date = dateKey();
     stockPayload.item_code = itemCode;
-    await db.from('inventory_entries').insert([stockPayload]);
+
+    const { error } = await db.from('inventory_entries').insert([stockPayload]);
+
+    if (error) {
+      alert("Unable to create stock entry for this location.");
+      return;
+    }
+
     await logAudit("Add Item", `Added new master item ${itemCode} at ${activeLocation}`);
   }
 
@@ -890,13 +916,34 @@ async function saveItem(e) {
 
 async function deleteCurrentItem() {
   if (!isManager()) return;
+
+  const entryId = Number($("editEntryId").value);
   const itemCode = $("itemId").value.trim();
   const description = $("itemDescription").value.trim();
 
-  if (confirm(`Are you sure you want to PERMANENTLY DELETE "${description}" (${itemCode}) globally across all locations?`)) {
-    await db.from('master_items').delete().eq('item_code', itemCode);
-    await db.from('inventory_entries').delete().eq('item_code', itemCode);
-    await logAudit("Delete Item", `Deleted master item ${itemCode} (${description})`);
+  if (!entryId) {
+    alert("Please select a valid stock entry to delete.");
+    return;
+  }
+
+  if (confirm(`Are you sure you want to delete "${description}" (${itemCode}) for ${activeLocation}?`)) {
+    const { data, error } = await db.from('inventory_entries')
+      .delete()
+      .eq('id', entryId)
+      .eq('location', activeLocation)
+      .select();
+
+    if (error) {
+      alert("Unable to delete this item for the selected location.");
+      return;
+    }
+
+    if (!data || data.length === 0) {
+      alert("This stock entry is not available in the current location.");
+      return;
+    }
+
+    await logAudit("Delete Item", `Deleted stock entry for ${itemCode} (${description}) at ${activeLocation}`);
     closeItemModal();
     loadCloudData();
   }
