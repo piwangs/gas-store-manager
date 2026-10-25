@@ -541,113 +541,86 @@ async function loadLocations() {
 }
 
 async function ensureMasterCatalog() {
-  let { data: masterItems } = await db.from('master_items').select('*');
-  if (!masterItems || masterItems.length === 0) {
-    await db.from('master_items').insert(defaultCatalog);
-    const { data: seeded } = await db.from('master_items').select('*');
-    return seeded || defaultCatalog;
-  }
-  return masterItems;
+  const { data, error } = await db.from('master_items').select('*').order('item_code');
+  if (error) throw error;
+  if (data && data.length) return data;
+
+  const { error: seedError } = await db.from('master_items').insert(defaultCatalog);
+  if (seedError && seedError.code !== '23505') throw seedError;
+  const { data: seeded, error: readError } = await db.from('master_items').select('*').order('item_code');
+  if (readError) throw readError;
+  return seeded || [];
 }
 
 async function loadCloudData() {
   if (!currentUser) return;
-  const date = dateKey();
-  updateDayLabel();
+  try {
+    const date = dateKey();
+    updateDayLabel();
+    const masterItems = await ensureMasterCatalog();
+    const masterMap = new Map(masterItems.map(m => [String(m.item_code), m]));
 
-  // 1. Get Master Catalog Definitions
-  const masterItems = await ensureMasterCatalog();
-  const masterMap = new Map(masterItems.map(m => [m.item_code, m]));
+    const { data: dailyEntries, error: dailyError } = await db.from('inventory_entries')
+      .select('*').eq('location', activeLocation).eq('entry_date', date);
+    if (dailyError) throw dailyError;
 
-  // 2. Fetch current location's daily log strictly
-  let { data: dailyEntries } = await db.from('inventory_entries')
-    .select('*')
-    .eq('location', activeLocation)
-    .eq('entry_date', date);
-
-  if (!dailyEntries || dailyEntries.length === 0) {
-    const prevDate = new Date(date + "T12:00:00");
-    prevDate.setDate(prevDate.getDate() - 1);
-    const prevDateStr = localDateString(prevDate);
-
-    let { data: prevData } = await db.from('inventory_entries')
-      .select('*')
-      .eq('location', activeLocation)
-      .eq('entry_date', prevDateStr);
-
-    const newEntries = masterItems.map(m => {
-      let openingVal = 0;
-      if (prevData && prevData.length > 0) {
-        const prev = prevData.find(p => p.item_code === m.item_code);
-        if (prev) {
-          openingVal = Number(prev.opening) + Number(prev.added) - Number(prev.issues);
-        }
-      }
-      return {
-        location: activeLocation,
-        entry_date: date,
-        item_code: m.item_code,
-        opening: openingVal,
-        added: 0,
-        issues: 0,
-        comments: ""
-      };
-    });
-
-    await db.from('inventory_entries').insert(newEntries);
-
-    const { data: refetched } = await db.from('inventory_entries')
-      .select('*')
-      .eq('location', activeLocation)
-      .eq('entry_date', date);
-    
-    dailyEntries = refetched || [];
-  } else {
-    // Sync missing master items into location log
-    const existingCodes = new Set(dailyEntries.map(e => e.item_code));
-    const missingMaster = masterItems.filter(m => !existingCodes.has(m.item_code));
-    if (missingMaster.length > 0) {
-      const extraEntries = missingMaster.map(m => ({
-        location: activeLocation,
-        entry_date: date,
-        item_code: m.item_code,
-        opening: 0,
-        added: 0,
-        issues: 0,
-        comments: ""
-      }));
-      await db.from('inventory_entries').insert(extraEntries);
-      const { data: refetched2 } = await db.from('inventory_entries')
-        .select('*')
-        .eq('location', activeLocation)
-        .eq('entry_date', date);
-      dailyEntries = refetched2 || dailyEntries;
+    let entries = dailyEntries || [];
+    const existingCodes = new Set(entries.map(e => String(e.item_code)));
+    const missing = masterItems.filter(m => !existingCodes.has(String(m.item_code)));
+    if (missing.length) {
+      const prevDate = new Date(date + 'T12:00:00');
+      prevDate.setDate(prevDate.getDate() - 1);
+      const { data: prevData, error: prevError } = await db.from('inventory_entries')
+        .select('item_code,opening,added,issues').eq('location', activeLocation)
+        .eq('entry_date', localDateString(prevDate));
+      if (prevError) throw prevError;
+      const prevMap = new Map((prevData || []).map(p => [String(p.item_code), p]));
+      const payload = missing.map(m => {
+        const prev = prevMap.get(String(m.item_code));
+        return {
+          location: activeLocation, entry_date: date, item_code: m.item_code,
+          opening: prev ? Number(prev.opening) + Number(prev.added) - Number(prev.issues) : 0,
+          added: 0, issues: 0, comments: ''
+        };
+      });
+      const { error: insertError } = await db.from('inventory_entries').upsert(payload,
+        { onConflict: 'location,entry_date,item_code', ignoreDuplicates: true });
+      if (insertError) throw insertError;
+      const { data: refreshed, error: refreshError } = await db.from('inventory_entries')
+        .select('*').eq('location', activeLocation).eq('entry_date', date);
+      if (refreshError) throw refreshError;
+      entries = refreshed || [];
     }
+
+    const unknownCodes = entries.filter(e => !masterMap.has(String(e.item_code))).map(e => e.item_code);
+    if (unknownCodes.length) {
+      throw new Error(`No matching master item for code(s): ${unknownCodes.join(', ')}. Add or restore these items in master_items.`);
+    }
+    currentItems = entries.map(entry => {
+      const master = masterMap.get(String(entry.item_code));
+      return {
+        id: entry.id, item_code: entry.item_code, description: master.description,
+        category: master.category, unit: master.unit,
+        opening: Number(entry.opening) || 0, added: Number(entry.added) || 0,
+        issues: Number(entry.issues) || 0, cost: Number(master.cost) || 0,
+        price: Number(master.price) || 0, comments: entry.comments || ''
+      };
+    }).sort((a, b) => String(a.item_code).localeCompare(String(b.item_code)));
+    renderTable(); updateKPIs(); renderChart();
+  } catch (err) {
+    console.error('Supabase load failed:', err);
+    alert(`Could not load inventory: ${friendlyDbError(err)}`);
   }
-
-  // 3. Map values strictly mapping master definitions to avoid "General" or cross-contamination
-  currentItems = dailyEntries.map(entry => {
-    const master = masterMap.get(entry.item_code) || {};
-    return {
-      id: entry.id,
-      item_code: entry.item_code,
-      description: master.description || "General Item",
-      category: master.category || "Dry Food Items",
-      unit: master.unit || "Pcs",
-      opening: Number(entry.opening) || 0,
-      added: Number(entry.added) || 0,
-      issues: Number(entry.issues) || 0,
-      cost: Number(master.cost) || 0,
-      price: Number(master.price) || 0,
-      comments: entry.comments || ""
-    };
-  }).sort((a, b) => a.item_code.localeCompare(b.item_code));
-
-  renderTable();
-  updateKPIs();
-  renderChart();
 }
 
+function friendlyDbError(error) {
+  if (!error) return 'Unknown database error.';
+  if (error.code === '23505') return 'This item already exists. Use a different item code or edit the existing item.';
+  if (error.code === '23503') return 'The selected location or related record does not exist.';
+  if (error.code === '42501') return 'Access denied by Supabase Row Level Security. Check your policies and sign-in setup.';
+  if (error.code === '42P01' || error.code === 'PGRST205') return 'A required Supabase table is missing. Run the supplied SQL setup script.';
+  return error.message || String(error);
+}
 function renderTable() {
   const tbody = $("tableBody");
   tbody.replaceChildren();
@@ -765,15 +738,11 @@ async function handleExcelUpload(e) {
 
         if (!itemCode || !description) continue;
 
-        await db.from('master_items').upsert([{
-          item_code: itemCode,
-          description: description,
-          category: category,
-          unit: unit,
-          cost: cost,
-          price: price,
+        const { error: itemError } = await db.from('master_items').upsert({
+          item_code: itemCode, description, category, unit, cost, price,
           updated_at: new Date().toISOString()
-        }]);
+        }, { onConflict: 'item_code' });
+        if (itemError) throw itemError;
       }
 
       await logAudit("Excel Upload", `Uploaded ${rows.length} master catalog items`);
@@ -782,7 +751,7 @@ async function handleExcelUpload(e) {
       showSaveStatus();
       loadCloudData();
     } catch (err) {
-      alert("Failed to process Excel file. Please use the exported Master Template.");
+      alert(`Excel upload failed: ${friendlyDbError(err)}`);
     }
   };
   reader.readAsArrayBuffer(file);
@@ -866,112 +835,59 @@ function closeItemModal() {
 
 async function saveItem(e) {
   e.preventDefault();
-  const entryId = Number($("editEntryId").value);
+  const entryId = Number($('editEntryId').value) || null;
   const manager = isManager();
-  const itemCode = $("itemId").value.trim();
-
-  if (manager) {
-    // 1. Update global master catalog item metadata
-    await db.from('master_items').upsert([{
-      item_code: itemCode,
-      description: $("itemDescription").value.trim(),
-      category: $("itemCategory").value,
-      unit: $("itemSpec").value.trim(),
-      cost: Number($("itemCost").value) || 0,
-      price: Number($("itemPrice").value) || 0,
-      updated_at: new Date().toISOString()
-    }]);
+  const itemCode = $('itemId').value.trim();
+  const description = $('itemDescription').value.trim();
+  const category = $('itemCategory').value;
+  const unit = $('itemSpec').value.trim();
+  if (!itemCode || !description || !category || !unit) {
+    alert('Enter an item code, item name, category, and unit.'); return;
   }
+  const now = new Date().toISOString();
+  try {
+    if (manager) {
+      const masterPayload = {
+        item_code: itemCode, description, category, unit,
+        cost: Number($('itemCost').value) || 0,
+        price: Number($('itemPrice').value) || 0, updated_at: now
+      };
+      let masterResult;
+      if (entryId) {
+        masterResult = await db.from('master_items').update(masterPayload).eq('item_code', itemCode);
+      } else {
+        masterResult = await db.from('master_items').insert(masterPayload);
+      }
+      if (masterResult.error) throw masterResult.error;
+    }
 
-  // 2. Update store-specific daily quantities (strictly for activeLocation and date)
-  const stockPayload = {
-    added: Number($("itemAdded").value) || 0,
-    issues: Number($("itemIssues").value) || 0,
-    comments: $("itemComments").value.trim(),
-    updated_at: new Date().toISOString()
-  };
+    const stockPayload = {
+      added: Number($('itemAdded').value) || 0,
+      issues: Number($('itemIssues').value) || 0,
+      comments: $('itemComments').value.trim(), updated_at: now
+    };
+    if (manager) stockPayload.opening = Number($('itemOpening').value) || 0;
 
-  if (manager) {
-    stockPayload.opening = Number($("itemOpening").value) || 0;
-  }
+    let result;
+    if (entryId) {
+      result = await db.from('inventory_entries').update(stockPayload).eq('id', entryId);
+    } else if (manager) {
+      result = await db.from('inventory_entries').insert({
+        location: activeLocation, entry_date: dateKey(), item_code: itemCode, ...stockPayload
+      });
+    } else {
+      alert('There is no inventory entry to update for this item and date.'); return;
+    }
+    if (result.error) throw result.error;
 
-  if (entryId) {
-    await db.from('inventory_entries').update(stockPayload).eq('id', entryId);
-    await logAudit(manager ? "Update Item" : "Log Stock", `Updated item ${itemCode} at ${activeLocation}`);
-  } else if (manager) {
-    stockPayload.location = activeLocation;
-    stockPayload.entry_date = dateKey();
-    stockPayload.item_code = itemCode;
-    await db.from('inventory_entries').insert([stockPayload]);
-    await logAudit("Add Item", `Added new master item ${itemCode} at ${activeLocation}`);
-  }
-
-  closeItemModal();
-  showSaveStatus();
-  loadCloudData();
-}
-
-async function deleteCurrentItem() {
-  if (!isManager()) return;
-  const itemCode = $("itemId").value.trim();
-  const description = $("itemDescription").value.trim();
-
-  if (confirm(`Are you sure you want to PERMANENTLY DELETE "${description}" (${itemCode}) globally across all locations?`)) {
-    await db.from('master_items').delete().eq('item_code', itemCode);
-    await db.from('inventory_entries').delete().eq('item_code', itemCode);
-    await logAudit("Delete Item", `Deleted master item ${itemCode} (${description})`);
-    closeItemModal();
-    loadCloudData();
+    await logAudit(entryId ? (manager ? 'Update Item' : 'Log Stock') : 'Add Item',
+      `Saved item ${itemCode} (${description}) at ${activeLocation}`);
+    closeItemModal(); showSaveStatus(); await loadCloudData();
+  } catch (err) {
+    console.error('Supabase save failed:', err);
+    alert(`Could not save item: ${friendlyDbError(err)}`);
   }
 }
-
-// User Self-Password Change Modal
-function openChangePasswordModal() {
-  $("myCurrentPassword").value = "";
-  $("myNewPassword").value = "";
-  $("myConfirmPassword").value = "";
-  $("changePassError").classList.add("hidden");
-  $("changePasswordModal").classList.remove("hidden");
-  $("changePasswordModal").classList.add("flex");
-}
-
-function closeChangePasswordModal() {
-  $("changePasswordModal").classList.add("hidden");
-  $("changePasswordModal").classList.remove("flex");
-}
-
-async function changeMyPassword(e) {
-  e.preventDefault();
-  const currentPass = $("myCurrentPassword").value.trim();
-  const newPass = $("myNewPassword").value.trim();
-  const confirmPass = $("myConfirmPassword").value.trim();
-  const errDiv = $("changePassError");
-
-  if (currentPass !== currentUser.password) {
-    errDiv.textContent = "Current password is incorrect.";
-    errDiv.classList.remove("hidden");
-    return;
-  }
-
-  if (newPass !== confirmPass) {
-    errDiv.textContent = "New passwords do not match.";
-    errDiv.classList.remove("hidden");
-    return;
-  }
-
-  const { error } = await db.from('store_users').update({ password: newPass }).eq('id', currentUser.id);
-  if (error) {
-    errDiv.textContent = "Error updating password.";
-    errDiv.classList.remove("hidden");
-    return;
-  }
-
-  currentUser.password = newPass;
-  await logAudit("Password Change", `User ${currentUser.username} changed their own password`);
-  alert("Your password has been updated successfully!");
-  closeChangePasswordModal();
-}
-
 function showSaveStatus() {
   const status = $("saveStatus");
   status.classList.remove("opacity-0");
@@ -1076,7 +992,7 @@ async function createLocation(e) {
 
   const { error } = await db.from('locations').insert([{ name }]);
   if (error) {
-    alert("Location already exists or error occurred.");
+    alert(error.code === "23505" ? "That location already exists. Choose a different name." : `Could not create location: ${friendlyDbError(error)}`);
     return;
   }
 
@@ -1131,7 +1047,7 @@ async function createAccount(e) {
   }]);
 
   if (error) {
-    alert("Username already exists or error occurred.");
+    alert(error.code === "23505" ? "That username already exists. Choose a different username." : `Could not create account: ${friendlyDbError(error)}`);
     return;
   }
 
@@ -1298,3 +1214,4 @@ function exportCSV() {
 </script>
 </body>
 </html>
+
