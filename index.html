@@ -76,14 +76,8 @@
         <div class="flex items-center bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 gap-2 text-xs">
           <i class="fa-solid fa-user-check text-blue-400"></i>
           <span id="displayUserName" class="font-semibold text-white">Signed out</span>
-          <button id="userPasswordBtn" type="button" class="text-slate-400 hover:text-amber-400 ml-1 transition" title="Change My Password"><i class="fa-solid fa-key"></i></button>
           <button id="logoutBtn" type="button" class="text-slate-400 hover:text-rose-400 ml-1 transition" title="Logout"><i class="fa-solid fa-right-from-bracket"></i></button>
         </div>
-        <button id="downloadTemplateBtn" type="button" class="hidden bg-emerald-700 hover:bg-emerald-800 text-white px-3 py-2 rounded-lg text-xs font-semibold shadow-md transition"><i class="fa-solid fa-file-excel mr-1"></i>Master Template</button>
-        <button id="uploadExcelBtn" type="button" class="hidden bg-teal-600 hover:bg-teal-700 text-white px-3 py-2 rounded-lg text-xs font-semibold shadow-md transition"><i class="fa-solid fa-file-arrow-up mr-1"></i>Upload Excel</button>
-        <button id="reorderBtn" type="button" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-2 rounded-lg text-xs font-semibold border border-slate-700 transition"><i class="fa-solid fa-cart-flatbed text-amber-400 mr-1"></i>Reorder List</button>
-        <button id="auditBtn" type="button" class="hidden bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-2 rounded-lg text-xs font-semibold border border-slate-700 transition"><i class="fa-solid fa-clock-rotate-left text-brand-400 mr-1"></i>Audit Log</button>
-        <button id="manageUsersBtn" type="button" class="hidden bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-lg text-xs font-semibold shadow-md transition"><i class="fa-solid fa-users-gear mr-1"></i>Stores & Accounts</button>
         <button id="exportBtn" type="button" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-2 rounded-lg text-xs border border-slate-700 transition"><i class="fa-solid fa-file-csv text-emerald-400 mr-1"></i>Export CSV</button>
         <button id="printBtn" type="button" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-2 rounded-lg text-xs border border-slate-700 transition"><i class="fa-solid fa-print text-amber-400 mr-1"></i>Print</button>
         <button id="newItemBtn" type="button" class="hidden bg-brand-600 hover:bg-brand-700 text-white px-3.5 py-2 rounded-lg text-xs font-semibold shadow-md transition"><i class="fa-solid fa-plus mr-1"></i>New Item</button>
@@ -177,19 +171,20 @@
       <form id="itemForm" class="p-6 space-y-4">
         <input type="hidden" id="editEntryId" value="">
         
-        <!-- Targeted Store Location Dropdown for Manager -->
+        <!-- Targeted Location Selection for Manager -->
         <div id="modalLocationWrapper" class="bg-amber-50 border border-amber-200 p-3 rounded-lg">
-          <label class="block text-xs font-bold text-amber-900 mb-1"><i class="fa-solid fa-store mr-1 text-amber-600"></i>Target Store Location for this Stock Edit:</label>
+          <label class="block text-xs font-bold text-amber-900 mb-1"><i class="fa-solid fa-store mr-1 text-amber-600"></i>Store Location for Quantity Edits:</label>
           <select id="itemTargetLocation" class="w-full bg-white border border-amber-300 rounded-lg px-3 py-1.5 text-xs font-bold text-slate-800 focus:ring-amber-500"></select>
+          <p class="text-[10px] text-amber-700 mt-1">* Note: Description, Category, & Unit edits sync globally to all locations.</p>
         </div>
 
         <div class="grid grid-cols-3 gap-3">
           <div><label class="block text-xs font-semibold mb-1 text-slate-600">Item ID</label><input id="itemId" readonly class="w-full bg-slate-100 border rounded-lg px-3 py-2 text-xs font-mono" placeholder="Auto"></div>
-          <div class="col-span-2"><label class="block text-xs font-semibold mb-1 text-slate-600">Item Description</label><input id="itemDescription" required maxlength="120" class="w-full border rounded-lg px-3 py-2 text-xs"></div>
+          <div class="col-span-2"><label class="block text-xs font-semibold mb-1 text-slate-600">Item Description (Syncs Globally)</label><input id="itemDescription" required maxlength="120" class="w-full border rounded-lg px-3 py-2 text-xs"></div>
         </div>
         <div class="grid grid-cols-2 gap-3">
-          <div><label class="block text-xs font-semibold mb-1 text-slate-600">Category</label><select id="itemCategory" required class="w-full border rounded-lg px-3 py-2 text-xs"><option>Dry Food Items</option><option>Soft Drinks</option><option>Alcoholic</option><option>Frozen</option><option>Fresh Food Items</option></select></div>
-          <div><label class="block text-xs font-semibold mb-1 text-slate-600">Specification / Unit</label><input id="itemSpec" required maxlength="30" placeholder="Kg, Pkt, Can" class="w-full border rounded-lg px-3 py-2 text-xs"></div>
+          <div><label class="block text-xs font-semibold mb-1 text-slate-600">Category (Syncs Globally)</label><select id="itemCategory" required class="w-full border rounded-lg px-3 py-2 text-xs"><option>Dry Food Items</option><option>Soft Drinks</option><option>Alcoholic</option><option>Frozen</option><option>Fresh Food Items</option></select></div>
+          <div><label class="block text-xs font-semibold mb-1 text-slate-600">Unit (Syncs Globally)</label><input id="itemSpec" required maxlength="30" placeholder="Kg, Pkt, Can" class="w-full border rounded-lg px-3 py-2 text-xs"></div>
         </div>
         <div class="grid grid-cols-3 gap-3">
           <div><label class="block text-xs font-semibold mb-1 text-slate-600">Opening Stock</label><input id="itemOpening" type="number" min="0" step="any" required value="0" class="w-full border rounded-lg px-3 py-2 text-xs"></div>
@@ -205,7 +200,7 @@
           <button id="deleteItemBtn" type="button" class="hidden bg-rose-600 hover:bg-rose-700 text-white px-3 py-2 rounded-lg text-xs font-semibold transition"><i class="fa-solid fa-trash mr-1"></i>Delete Globally</button>
           <div class="flex gap-2 ml-auto">
             <button id="cancelItemBtn" type="button" class="bg-slate-100 hover:bg-slate-200 px-4 py-2 rounded-lg text-xs font-semibold">Cancel</button>
-            <button type="submit" class="bg-brand-600 hover:bg-brand-700 text-white px-5 py-2 rounded-lg text-xs font-semibold shadow-md">Save Log / Entry</button>
+            <button type="submit" class="bg-brand-600 hover:bg-brand-700 text-white px-5 py-2 rounded-lg text-xs font-semibold shadow-md">Save & Sync Item</button>
           </div>
         </div>
       </form>
@@ -281,8 +276,6 @@ function bindEvents() {
   $("deleteItemBtn").addEventListener("click", deleteCurrentItem);
   $("closeItemX").addEventListener("click", closeItemModal);
   $("cancelItemBtn").addEventListener("click", closeItemModal);
-
-  // Auto-reload stock input figures when manager switches store location inside the edit item modal
   $("itemTargetLocation").addEventListener("change", loadStockDataForModalLocation);
 }
 
@@ -351,9 +344,11 @@ async function loadCloudData() {
   const date = dateKey();
   updateDayLabel();
 
+  // 1. Fetch Global Master Items Catalog
   const { data: masterItems } = await db.from('master_items').select('*').order('item_code');
   if (!masterItems || masterItems.length === 0) return;
 
+  // 2. Fetch daily stock figures strictly for activeLocation and selected date
   let { data: dailyEntries } = await db.from('inventory_entries')
     .select('*')
     .eq('location', activeLocation)
@@ -398,6 +393,7 @@ async function loadCloudData() {
     dailyEntries = refetched || [];
   }
 
+  // 3. Merge synced master item metadata with location stock quantities
   const masterMap = new Map(masterItems.map(m => [m.item_code, m]));
 
   currentItems = dailyEntries.map(entry => {
@@ -599,19 +595,19 @@ async function saveItem(e) {
   const itemCode = $("itemId").value.trim();
   const targetLocation = manager ? $("itemTargetLocation").value : activeLocation;
 
+  // 1. Sync item metadata (Description, Category, Unit, Prices) to all locations globally
   if (manager) {
-    await db.from('master_items').upsert([{
-      item_code: itemCode,
-      description: $("itemDescription").value.trim(),
-      category: $("itemCategory").value,
-      unit: $("itemSpec").value.trim(),
-      cost: Number($("itemCost").value) || 0,
-      price: Number($("itemPrice").value) || 0,
-      updated_at: new Date().toISOString()
-    }]);
+    await db.rpc('update_master_item_and_sync', {
+      p_item_code: itemCode,
+      p_description: $("itemDescription").value.trim(),
+      p_category: $("itemCategory").value,
+      p_unit: $("itemSpec").value.trim(),
+      p_cost: Number($("itemCost").value) || 0,
+      p_price: Number($("itemPrice").value) || 0
+    });
   }
 
-  // Strictly save stock values to target location only
+  // 2. Save stock quantities (Opening, Added, Issues) exclusively for the selected target location
   await db.rpc('upsert_location_inventory', {
     p_location: targetLocation,
     p_entry_date: dateKey(),
@@ -622,7 +618,7 @@ async function saveItem(e) {
     p_comments: $("itemComments").value.trim()
   });
 
-  await logAudit("Update Item", `Updated ${itemCode} for location: ${targetLocation}`);
+  await logAudit("Update Item", `Synced metadata for ${itemCode} globally and stock for location: ${targetLocation}`);
 
   closeItemModal();
   showSaveStatus();
