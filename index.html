@@ -1,725 +1,193 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>GAS GENERAL STORE MANAGER - Cloud Real-Time System</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-  <script>
-    tailwind.config = { 
-      theme: { 
-        extend: { 
-          colors: { 
-            brand: {
-              50:'#eff6ff', 100:'#dbeafe', 500:'#3b82f6', 600:'#2563eb', 700:'#1d4ed8', 900:'#1e3a8a'
-            }
-          }
-        }
-      }
-    };
-  </script>
-  <style>
-    @media print {
-      #loginModal, header button, #managerLocationBox, #filtersPanel,
-      #itemModal, #userManagerModal, #editUserModal, #auditModal, #reorderModal, #changePasswordModal, .no-print { display:none !important; }
-      body { background:white !important; }
-      main { max-width:none !important; padding:0 !important; }
-      .shadow-sm { box-shadow:none !important; }
-    }
-  </style>
-</head>
-<body class="bg-slate-100 text-slate-800 font-sans min-h-screen flex flex-col">
-
-  <input type="file" id="excelFileInput" accept=".xlsx, .xls, .csv" class="hidden">
-
-  <!-- Login Modal -->
-  <div id="loginModal" class="fixed inset-0 bg-slate-900/90 z-50 flex items-center justify-center p-4">
-    <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 space-y-4">
-      <div class="text-center">
-        <div class="inline-block bg-brand-600 text-white p-3.5 rounded-2xl mb-2 shadow-md">
-          <i class="fa-solid fa-lock text-2xl"></i>
-        </div>
-        <h2 class="text-xl font-bold text-slate-800">GAS GENERAL STORE MANAGER</h2>
-        <p class="text-xs text-slate-500 mt-1">Cloud Real-Time Multi-Location System</p>
-      </div>
-
-      <form id="loginForm" class="space-y-3">
-        <div>
-          <label for="loginUser" class="block text-xs font-semibold uppercase mb-1 text-slate-600">Username</label>
-          <input id="loginUser" required autocomplete="username" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none" placeholder="Enter username">
-        </div>
-        <div>
-          <label for="loginPass" class="block text-xs font-semibold uppercase mb-1 text-slate-600">Password</label>
-          <input id="loginPass" type="password" required autocomplete="current-password" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none" placeholder="Enter password">
-        </div>
-        <div id="loginError" class="hidden text-xs text-rose-600 font-semibold text-center">Invalid username or password.</div>
-        <button type="submit" class="w-full bg-brand-600 hover:bg-brand-700 text-white font-bold py-2.5 rounded-lg text-sm shadow-md transition">Sign In to Cloud System</button>
-      </form>
-    </div>
-  </div>
-
-  <!-- Header Navigation -->
-  <header class="bg-slate-900 text-white shadow-lg sticky top-0 z-40">
-    <div class="max-w-7xl mx-auto px-4 py-3 flex flex-col sm:flex-row justify-between items-center gap-4">
-      <div class="flex items-center gap-3">
-        <div class="bg-brand-600 p-2.5 rounded-xl shadow-md"><i class="fa-solid fa-boxes-stacked text-xl"></i></div>
-        <div>
-          <h1 class="text-xl font-bold tracking-tight">GAS GENERAL STORE MANAGER <span id="locationBadge" class="text-xs bg-brand-700 px-2.5 py-0.5 rounded-full ml-2">Signed out</span></h1>
-          <p class="text-xs text-slate-400">Cloud Connected Multi-Location System</p>
-        </div>
-      </div>
-      <div class="flex flex-wrap items-center justify-end gap-2 w-full sm:w-auto">
-        <div class="flex items-center bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 gap-2 text-xs">
-          <i class="fa-solid fa-user-check text-blue-400"></i>
-          <span id="displayUserName" class="font-semibold text-white">Signed out</span>
-          <button id="logoutBtn" type="button" class="text-slate-400 hover:text-rose-400 ml-1 transition" title="Logout"><i class="fa-solid fa-right-from-bracket"></i></button>
-        </div>
-        <button id="exportBtn" type="button" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-2 rounded-lg text-xs border border-slate-700 transition"><i class="fa-solid fa-file-csv text-emerald-400 mr-1"></i>Export CSV</button>
-        <button id="printBtn" type="button" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-2 rounded-lg text-xs border border-slate-700 transition"><i class="fa-solid fa-print text-amber-400 mr-1"></i>Print</button>
-        <button id="newItemBtn" type="button" class="hidden bg-brand-600 hover:bg-brand-700 text-white px-3.5 py-2 rounded-lg text-xs font-semibold shadow-md transition"><i class="fa-solid fa-plus mr-1"></i>New Item</button>
-      </div>
-    </div>
-  </header>
-
-  <!-- Main Content -->
-  <main class="flex-grow max-w-7xl w-full mx-auto px-4 py-6 space-y-6">
-    <!-- Date & Location Selector Bar -->
-    <section class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col md:flex-row justify-between items-center gap-4">
-      <div class="flex items-center gap-2 flex-wrap">
-        <button id="prevDateBtn" class="bg-slate-100 hover:bg-slate-200 px-3 py-2 rounded-lg text-sm font-semibold transition"><i class="fa-solid fa-chevron-left"></i></button>
-        <div class="flex items-center gap-2"><i class="fa-solid fa-calendar-day text-brand-600"></i><input type="date" id="selectedDate" class="bg-slate-50 border border-slate-300 rounded-lg text-sm font-bold p-2 focus:ring-brand-500"></div>
-        <button id="nextDateBtn" class="bg-slate-100 hover:bg-slate-200 px-3 py-2 rounded-lg text-sm font-semibold transition"><i class="fa-solid fa-chevron-right"></i></button>
-        <button id="todayBtn" class="bg-brand-50 hover:bg-brand-100 text-brand-700 px-3 py-2 rounded-lg text-xs font-bold transition">Today</button>
-      </div>
-      <div id="managerLocationBox" class="hidden items-center gap-2">
-        <label for="locationSelector" class="text-xs font-semibold text-slate-500">Active View Location:</label>
-        <select id="locationSelector" class="bg-slate-50 border border-slate-300 rounded-lg text-xs p-2 font-semibold text-slate-800 focus:ring-brand-500"></select>
-      </div>
-      <div class="flex items-center gap-3">
-        <span id="dayLabel" class="text-xs font-semibold text-slate-500 bg-slate-100 px-3 py-1.5 rounded-full">--</span>
-        <span id="saveStatus" class="text-xs text-emerald-600 font-semibold opacity-0 transition-opacity"><i class="fa-solid fa-cloud-arrow-up mr-1"></i>Synced to Cloud</span>
-      </div>
-    </section>
-
-    <!-- Operational KPI Cards -->
-    <section class="grid grid-cols-2 md:grid-cols-5 gap-4">
-      <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200"><div class="flex justify-between items-center"><span class="text-xs font-semibold text-slate-400 uppercase">Items Tracked</span><i class="fa-solid fa-list text-brand-500 bg-brand-50 p-2 rounded-lg"></i></div><h3 id="statTotalItems" class="text-2xl font-bold mt-2 text-slate-800">0</h3></div>
-      <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200"><div class="flex justify-between items-center"><span class="text-xs font-semibold text-slate-400 uppercase">Daily Issues</span><i class="fa-solid fa-hand-holding text-amber-500 bg-amber-50 p-2 rounded-lg"></i></div><h3 id="statTotalIssues" class="text-2xl font-bold mt-2 text-slate-800">0</h3></div>
-      <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200"><div class="flex justify-between items-center"><span class="text-xs font-semibold text-slate-400 uppercase">Daily Revenue</span><i class="fa-solid fa-sack-dollar text-emerald-500 bg-emerald-50 p-2 rounded-lg"></i></div><h3 id="statDailyRevenue" class="text-2xl font-bold mt-2 text-emerald-600">$0.00</h3></div>
-      <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200"><div class="flex justify-between items-center"><span class="text-xs font-semibold text-slate-400 uppercase">Est. Gross Profit</span><i class="fa-solid fa-chart-line text-blue-500 bg-blue-50 p-2 rounded-lg"></i></div><h3 id="statGrossProfit" class="text-2xl font-bold mt-2 text-blue-600">$0.00</h3></div>
-      <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 col-span-2 md:col-span-1"><div class="flex justify-between items-center"><span class="text-xs font-semibold text-slate-400 uppercase">Low Stock Alerts</span><i class="fa-solid fa-triangle-exclamation text-rose-500 bg-rose-50 p-2 rounded-lg"></i></div><h3 id="statLowStock" class="text-2xl font-bold mt-2 text-rose-600">0</h3></div>
-    </section>
-
-    <!-- Filters Panel -->
-    <section id="filtersPanel" class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col md:flex-row justify-between items-center gap-3">
-      <div class="flex flex-wrap gap-2" id="categoryFilter">
-        <button data-category="All" class="cat-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-brand-600 text-white">All</button>
-        <button data-category="Dry Food Items" class="cat-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 text-slate-700">Dry Food</button>
-        <button data-category="Soft Drinks" class="cat-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 text-slate-700">Soft Drinks</button>
-        <button data-category="Alcoholic" class="cat-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 text-slate-700">Alcoholic</button>
-        <button data-category="Frozen" class="cat-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 text-slate-700">Frozen</button>
-        <button data-category="Fresh Food Items" class="cat-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 text-slate-700">Fresh Food</button>
-      </div>
-      <input id="searchInput" type="search" placeholder="Search item..." class="w-full md:w-64 bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none">
-    </section>
-
-    <!-- Inventory Data Table -->
-    <section class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-      <div class="overflow-x-auto">
-        <table class="w-full text-left border-collapse" id="inventoryTable">
-          <thead>
-            <tr class="bg-slate-900 text-slate-200 text-xs uppercase tracking-wider font-semibold">
-              <th class="p-3">ID</th>
-              <th class="p-3">Item Description</th>
-              <th class="p-3">Category</th>
-              <th class="p-3 text-center">Unit</th>
-              <th class="p-3 text-center">Opening</th>
-              <th class="p-3 text-center">Added</th>
-              <th class="p-3 text-center">Issues</th>
-              <th class="p-3 text-center">Closing</th>
-              <th class="p-3 text-right">Cost Price</th>
-              <th class="p-3 text-right">Sale Price</th>
-              <th class="p-3 text-right">Est. Revenue</th>
-              <th class="p-3">Comments</th>
-              <th class="p-3 text-center">Actions</th>
-            </tr>
-          </thead>
-          <tbody id="tableBody" class="divide-y divide-slate-200 text-xs font-medium"></tbody>
-        </table>
-      </div>
-      <div id="emptyState" class="hidden p-8 text-center text-sm text-slate-500">No inventory items found for this date/location in the cloud.</div>
-    </section>
-
-    <!-- Category Chart -->
-    <section class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
-      <h3 class="text-sm font-bold text-slate-800 mb-4 flex items-center"><i class="fa-solid fa-chart-bar text-brand-600 mr-2"></i>Daily Issues Breakdown by Category</h3>
-      <div class="h-64"><canvas id="categoryChart"></canvas></div>
-    </section>
-  </main>
-
-  <!-- Add/Edit Inventory Item Modal -->
-  <div id="itemModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
-    <div class="bg-white rounded-2xl shadow-xl max-w-lg w-full overflow-hidden border border-slate-200">
-      <div class="bg-slate-900 text-white px-6 py-4 flex justify-between items-center">
-        <h3 id="modalTitle" class="font-bold text-sm">Add/Edit Inventory Item</h3>
-        <button id="closeItemX" type="button" class="text-slate-300 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
-      </div>
-      <form id="itemForm" class="p-6 space-y-4">
-        <input type="hidden" id="editEntryId" value="">
-        
-        <!-- Targeted Location Selection for Manager -->
-        <div id="modalLocationWrapper" class="bg-amber-50 border border-amber-200 p-3 rounded-lg">
-          <label class="block text-xs font-bold text-amber-900 mb-1"><i class="fa-solid fa-store mr-1 text-amber-600"></i>Store Location for Quantity Edits:</label>
-          <select id="itemTargetLocation" class="w-full bg-white border border-amber-300 rounded-lg px-3 py-1.5 text-xs font-bold text-slate-800 focus:ring-amber-500"></select>
-          <p class="text-[10px] text-amber-700 mt-1">* Note: Description, Category, & Unit edits sync globally to all locations.</p>
-        </div>
-
-        <div class="grid grid-cols-3 gap-3">
-          <div><label class="block text-xs font-semibold mb-1 text-slate-600">Item ID</label><input id="itemId" readonly class="w-full bg-slate-100 border rounded-lg px-3 py-2 text-xs font-mono" placeholder="Auto"></div>
-          <div class="col-span-2"><label class="block text-xs font-semibold mb-1 text-slate-600">Item Description (Syncs Globally)</label><input id="itemDescription" required maxlength="120" class="w-full border rounded-lg px-3 py-2 text-xs"></div>
-        </div>
-        <div class="grid grid-cols-2 gap-3">
-          <div><label class="block text-xs font-semibold mb-1 text-slate-600">Category (Syncs Globally)</label><select id="itemCategory" required class="w-full border rounded-lg px-3 py-2 text-xs"><option>Dry Food Items</option><option>Soft Drinks</option><option>Alcoholic</option><option>Frozen</option><option>Fresh Food Items</option></select></div>
-          <div><label class="block text-xs font-semibold mb-1 text-slate-600">Unit (Syncs Globally)</label><input id="itemSpec" required maxlength="30" placeholder="Kg, Pkt, Can" class="w-full border rounded-lg px-3 py-2 text-xs"></div>
-        </div>
-        <div class="grid grid-cols-3 gap-3">
-          <div><label class="block text-xs font-semibold mb-1 text-slate-600">Opening Stock</label><input id="itemOpening" type="number" min="0" step="any" required value="0" class="w-full border rounded-lg px-3 py-2 text-xs"></div>
-          <div><label class="block text-xs font-semibold mb-1 text-slate-600">Stock Added</label><input id="itemAdded" type="number" min="0" step="any" value="0" class="w-full border rounded-lg px-3 py-2 text-xs"></div>
-          <div><label class="block text-xs font-semibold mb-1 text-slate-600">Daily Issues</label><input id="itemIssues" type="number" min="0" step="any" value="0" class="w-full border rounded-lg px-3 py-2 text-xs"></div>
-        </div>
-        <div class="grid grid-cols-2 gap-3">
-          <div><label class="block text-xs font-semibold mb-1 text-slate-600">Unit Cost ($)</label><input id="itemCost" type="number" min="0" step="0.01" value="0.00" class="w-full border rounded-lg px-3 py-2 text-xs"></div>
-          <div><label class="block text-xs font-semibold mb-1 text-slate-600">Selling Price ($)</label><input id="itemPrice" type="number" min="0" step="0.01" value="0.00" class="w-full border rounded-lg px-3 py-2 text-xs"></div>
-        </div>
-        <div><label class="block text-xs font-semibold mb-1 text-slate-600">Comments / Transfers</label><input id="itemComments" maxlength="300" class="w-full border rounded-lg px-3 py-2 text-xs" placeholder="Notes..."></div>
-        <div class="flex justify-between items-center pt-2">
-          <button id="deleteItemBtn" type="button" class="hidden bg-rose-600 hover:bg-rose-700 text-white px-3 py-2 rounded-lg text-xs font-semibold transition"><i class="fa-solid fa-trash mr-1"></i>Delete Globally</button>
-          <div class="flex gap-2 ml-auto">
-            <button id="cancelItemBtn" type="button" class="bg-slate-100 hover:bg-slate-200 px-4 py-2 rounded-lg text-xs font-semibold">Cancel</button>
-            <button type="submit" class="bg-brand-600 hover:bg-brand-700 text-white px-5 py-2 rounded-lg text-xs font-semibold shadow-md">Save & Sync Item</button>
-          </div>
-        </div>
-      </form>
-    </div>
-  </div>
-
-<script>
-"use strict";
-
-const SUPABASE_URL = "https://pxboxopyrcprdmpjucia.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB4Ym94b3B5cmNwcmRtcGp1Y2lhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI3MzYyNDEsImV4cCI6MjEwODMxMjI0MX0.rw8NCKG1JMPDbQyiIpjRYVSpNHaXn6R_hp_aJSocGpc";
-
-const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-let currentUser = null;
-let activeLocation = "Juba Depot";
-let currentActiveCategory = "All";
-let chartInstance = null;
-let saveStatusTimer = null;
-let currentItems = [];
-let allLocationsList = [];
-
-const $ = id => document.getElementById(id);
-const isManager = () => !!currentUser && currentUser.role === "Manager";
-
-function localDateString(date = new Date()) {
-  const y = date.getFullYear();
-  const m = String(date.getMonth()+1).padStart(2,"0");
-  const d = String(date.getDate()).padStart(2,"0");
-  return `${y}-${m}-${d}`;
-}
-
-function dateKey() { return $("selectedDate").value || localDateString(); }
-
-async function logAudit(action, details) {
-  if (!currentUser) return;
-  await db.from('audit_logs').insert([{
-    username: currentUser.username,
-    role: currentUser.role,
-    location: activeLocation,
-    action: action,
-    details: details
-  }]);
-}
-
-window.addEventListener("DOMContentLoaded", () => {
-  $("selectedDate").value = localDateString();
-  bindEvents();
-  updateDayLabel();
-});
-
-function bindEvents() {
-  $("loginForm").addEventListener("submit", handleLogin);
-  $("logoutBtn").addEventListener("click", () => location.reload());
-  $("locationSelector").addEventListener("change", (e) => {
-    activeLocation = e.target.value;
-    $("locationBadge").textContent = activeLocation;
-    loadCloudData();
-  });
-  $("exportBtn").addEventListener("click", exportCSV);
-  $("printBtn").addEventListener("click", () => window.print());
-  $("newItemBtn").addEventListener("click", openNewItemModal);
-  $("selectedDate").addEventListener("change", loadCloudData);
-  $("prevDateBtn").addEventListener("click", () => changeDate(-1));
-  $("nextDateBtn").addEventListener("click", () => changeDate(1));
-  $("todayBtn").addEventListener("click", setToday);
-  $("searchInput").addEventListener("input", renderTable);
-  $("categoryFilter").addEventListener("click", e => {
-    const button = e.target.closest("button[data-category]");
-    if (button) filterCategory(button.dataset.category);
-  });
-  $("itemForm").addEventListener("submit", saveItem);
-  $("deleteItemBtn").addEventListener("click", deleteCurrentItem);
-  $("closeItemX").addEventListener("click", closeItemModal);
-  $("cancelItemBtn").addEventListener("click", closeItemModal);
-  $("itemTargetLocation").addEventListener("change", loadStockDataForModalLocation);
-}
-
-async function handleLogin(e) {
-  e.preventDefault();
-  const username = $("loginUser").value.trim();
-  const password = $("loginPass").value.trim();
-
-  const { data, error } = await db.from('store_users')
-    .select('*')
-    .eq('username', username)
-    .eq('password', password)
-    .eq('disabled', false)
-    .maybeSingle();
-
-  if (error || !data) {
-    $("loginError").classList.remove("hidden");
-    return;
-  }
-
-  currentUser = data;
-  $("loginModal").classList.add("hidden");
-  $("displayUserName").textContent = `${currentUser.name} (${currentUser.role})`;
-
-  await loadLocations();
-
-  if (currentUser.role === "Manager") {
-    activeLocation = "Juba Depot";
-    $("managerLocationBox").classList.remove("hidden");
-    $("managerLocationBox").classList.add("flex");
-    $("newItemBtn").classList.remove("hidden");
-  } else {
-    activeLocation = currentUser.location;
-    $("managerLocationBox").classList.add("hidden");
-    $("newItemBtn").classList.add("hidden");
-  }
-
-  $("locationBadge").textContent = activeLocation;
-  await logAudit("Login", `Signed in at ${activeLocation}`);
-  loadCloudData();
-}
-
-async function loadLocations() {
-  const { data } = await db.from('locations').select('name').order('name');
-  if (data && data.length) {
-    allLocationsList = data.map(l => l.name);
-    const select = $("locationSelector");
-    select.replaceChildren();
-    allLocationsList.forEach(name => {
-      const opt = document.createElement("option");
-      opt.value = name; opt.textContent = name; select.appendChild(opt);
-    });
-    select.value = activeLocation;
-
-    const modalLocSelect = $("itemTargetLocation");
-    modalLocSelect.replaceChildren();
-    allLocationsList.forEach(name => {
-      const opt = document.createElement("option");
-      opt.value = name; opt.textContent = name; modalLocSelect.appendChild(opt);
-    });
-  }
-}
-
-async function loadCloudData() {
-  if (!currentUser) return;
-  const date = dateKey();
-  updateDayLabel();
-
-  // 1. Fetch Global Master Items Catalog
-  const { data: masterItems } = await db.from('master_items').select('*').order('item_code');
-  if (!masterItems || masterItems.length === 0) return;
-
-  // 2. Fetch daily stock figures strictly for activeLocation and selected date
-  let { data: dailyEntries } = await db.from('inventory_entries')
-    .select('*')
-    .eq('location', activeLocation)
-    .eq('entry_date', date);
-
-  if (!dailyEntries || dailyEntries.length === 0) {
-    const prevDate = new Date(date + "T12:00:00");
-    prevDate.setDate(prevDate.getDate() - 1);
-    const prevDateStr = localDateString(prevDate);
-
-    let { data: prevData } = await db.from('inventory_entries')
-      .select('*')
-      .eq('location', activeLocation)
-      .eq('entry_date', prevDateStr);
-
-    const newEntries = masterItems.map(m => {
-      let openingVal = 0;
-      if (prevData && prevData.length > 0) {
-        const prev = prevData.find(p => p.item_code === m.item_code);
-        if (prev) {
-          openingVal = Number(prev.opening) + Number(prev.added) - Number(prev.issues);
-        }
-      }
-      return {
-        location: activeLocation,
-        entry_date: date,
-        item_code: m.item_code,
-        opening: openingVal,
-        added: 0,
-        issues: 0,
-        comments: ""
-      };
-    });
-
-    await db.from('inventory_entries').insert(newEntries);
-
-    const { data: refetched } = await db.from('inventory_entries')
-      .select('*')
-      .eq('location', activeLocation)
-      .eq('entry_date', date);
-    
-    dailyEntries = refetched || [];
-  }
-
-  // 3. Merge synced master item metadata with location stock quantities
-  const masterMap = new Map(masterItems.map(m => [m.item_code, m]));
-
-  currentItems = dailyEntries.map(entry => {
-    const master = masterMap.get(entry.item_code) || {};
-    return {
-      id: entry.id,
-      item_code: entry.item_code,
-      description: master.description,
-      category: master.category,
-      unit: master.unit,
-      opening: Number(entry.opening) || 0,
-      added: Number(entry.added) || 0,
-      issues: Number(entry.issues) || 0,
-      cost: Number(master.cost) || 0,
-      price: Number(master.price) || 0,
-      comments: entry.comments || ""
-    };
-  }).sort((a, b) => a.item_code.localeCompare(b.item_code));
-
-  renderTable();
-  updateKPIs();
-  renderChart();
-}
-
-function renderTable() {
-  const tbody = $("tableBody");
-  tbody.replaceChildren();
-
-  const search = $("searchInput").value.toLowerCase();
-  const filtered = currentItems.filter(item => {
-    const matchesCat = currentActiveCategory === "All" || item.category === currentActiveCategory;
-    const matchesSearch = item.description.toLowerCase().includes(search) || item.item_code.toLowerCase().includes(search);
-    return matchesCat && matchesSearch;
-  });
-
-  if (!filtered.length) {
-    $("emptyState").classList.remove("hidden");
-    return;
-  }
-  $("emptyState").classList.add("hidden");
-
-  filtered.forEach(item => {
-    const closing = Number(item.opening) + Number(item.added) - Number(item.issues);
-    const rev = Number(item.issues) * Number(item.price);
-
-    const tr = document.createElement("tr");
-    tr.className = "hover:bg-slate-50";
-    tr.innerHTML = `
-      <td class="p-3 font-mono font-semibold text-slate-500">${item.item_code}</td>
-      <td class="p-3 font-bold text-slate-800">${item.description}</td>
-      <td class="p-3">${item.category}</td>
-      <td class="p-3 text-center">${item.unit}</td>
-      <td class="p-3 text-center font-semibold">${item.opening}</td>
-      <td class="p-3 text-center text-emerald-600">+${item.added}</td>
-      <td class="p-3 text-center text-amber-600">-${item.issues}</td>
-      <td class="p-3 text-center font-extrabold ${closing <= 5 ? 'text-rose-600' : ''}">${closing}</td>
-      <td class="p-3 text-right font-mono">$${Number(item.cost).toFixed(2)}</td>
-      <td class="p-3 text-right font-mono">$${Number(item.price).toFixed(2)}</td>
-      <td class="p-3 text-right font-mono text-emerald-600">$${rev.toFixed(2)}</td>
-      <td class="p-3 text-slate-500">${item.comments || '--'}</td>
-      <td class="p-3 text-center">
-        <button onclick="openEditItemModal(${item.id})" class="bg-amber-100 hover:bg-amber-200 text-amber-800 px-2.5 py-1 rounded text-[10px] font-bold"><i class="fa-solid fa-pen mr-1"></i>${isManager() ? 'Edit Item / Store' : 'Log Stock'}</button>
-      </td>
-    `;
-    tbody.appendChild(tr);
-  });
-}
-
-function updateKPIs() {
-  let totalIssues = 0, totalRevenue = 0, grossProfit = 0, lowStock = 0;
-  currentItems.forEach(item => {
-    const issues = Number(item.issues) || 0;
-    const closing = Number(item.opening) + Number(item.added) - issues;
-    const rev = issues * Number(item.price);
-    const costTotal = issues * Number(item.cost);
-
-    totalIssues += issues;
-    totalRevenue += rev;
-    grossProfit += (rev - costTotal);
-    if (closing <= 5) lowStock++;
-  });
-
-  $("statTotalItems").textContent = currentItems.length;
-  $("statTotalIssues").textContent = totalIssues;
-  $("statDailyRevenue").textContent = `$${totalRevenue.toFixed(2)}`;
-  $("statGrossProfit").textContent = `$${grossProfit.toFixed(2)}`;
-  $("statLowStock").textContent = lowStock;
-}
-
-function openEditItemModal(id) {
-  const item = currentItems.find(i => i.id === id);
-  if (!item) return;
-
-  const manager = isManager();
-  $("modalTitle").textContent = manager ? `Edit Item: ${item.description}` : `Log Stock for: ${item.description}`;
-  $("editEntryId").value = item.id;
-  $("itemId").value = item.item_code;
-  $("itemId").readOnly = true;
-  $("itemDescription").value = item.description;
-  $("itemCategory").value = item.category;
-  $("itemSpec").value = item.unit;
-  $("itemCost").value = item.cost;
-  $("itemPrice").value = item.price;
-
-  if (manager) {
-    $("modalLocationWrapper").classList.remove("hidden");
-    $("itemTargetLocation").value = activeLocation;
-    $("deleteItemBtn").classList.remove("hidden");
-  } else {
-    $("modalLocationWrapper").classList.add("hidden");
-    $("itemTargetLocation").value = activeLocation;
-    $("deleteItemBtn").classList.add("hidden");
-  }
-
-  $("itemDescription").disabled = !manager;
-  $("itemCategory").disabled = !manager;
-  $("itemSpec").disabled = !manager;
-  $("itemOpening").disabled = !manager; 
-  $("itemCost").disabled = !manager;
-  $("itemPrice").disabled = !manager;
-
-  loadStockDataForModalLocation();
-
-  $("itemModal").classList.remove("hidden");
-  $("itemModal").classList.add("flex");
-}
-
-async function loadStockDataForModalLocation() {
-  const itemCode = $("itemId").value;
-  const targetLocation = isManager() ? $("itemTargetLocation").value : activeLocation;
-  const date = dateKey();
-
-  const { data } = await db.from('inventory_entries')
-    .select('*')
-    .eq('location', targetLocation)
-    .eq('entry_date', date)
-    .eq('item_code', itemCode)
-    .maybeSingle();
-
-  if (data) {
-    $("itemOpening").value = data.opening || 0;
-    $("itemAdded").value = data.added || 0;
-    $("itemIssues").value = data.issues || 0;
-    $("itemComments").value = data.comments || "";
-  } else {
-    $("itemOpening").value = 0;
-    $("itemAdded").value = 0;
-    $("itemIssues").value = 0;
-    $("itemComments").value = "";
-  }
-}
-
-function openNewItemModal() {
-  if (!isManager()) return;
-  $("modalTitle").textContent = "Add New Master Item";
-  $("editEntryId").value = "";
-
-  let maxCode = 0;
-  currentItems.forEach(i => {
-    const num = parseInt(i.item_code, 10);
-    if (!isNaN(num) && num > maxCode) maxCode = num;
-  });
-  $("itemId").value = String(maxCode + 1).padStart(3, '0');
-  $("itemId").readOnly = true;
-
-  $("itemDescription").value = "";
-  $("itemCategory").value = "Dry Food Items";
-  $("itemSpec").value = "Kg";
-  $("itemOpening").value = "0";
-  $("itemAdded").value = "0";
-  $("itemIssues").value = "0";
-  $("itemCost").value = "0.00";
-  $("itemPrice").value = "0.00";
-  $("itemComments").value = "";
-
-  $("modalLocationWrapper").classList.remove("hidden");
-  $("itemTargetLocation").value = activeLocation;
-
-  $("itemDescription").disabled = false;
-  $("itemCategory").disabled = false;
-  $("itemSpec").disabled = false;
-  $("itemOpening").disabled = false;
-  $("itemCost").disabled = false;
-  $("itemPrice").disabled = false;
-
-  $("deleteItemBtn").classList.add("hidden");
-  $("itemModal").classList.remove("hidden");
-  $("itemModal").classList.add("flex");
-}
-
-function closeItemModal() {
-  $("itemModal").classList.add("hidden");
-  $("itemModal").classList.remove("flex");
-}
-
-async function saveItem(e) {
-  e.preventDefault();
-  const manager = isManager();
-  const itemCode = $("itemId").value.trim();
-  const targetLocation = manager ? $("itemTargetLocation").value : activeLocation;
-
-  // 1. Sync item metadata (Description, Category, Unit, Prices) to all locations globally
-  if (manager) {
-    await db.rpc('update_master_item_and_sync', {
-      p_item_code: itemCode,
-      p_description: $("itemDescription").value.trim(),
-      p_category: $("itemCategory").value,
-      p_unit: $("itemSpec").value.trim(),
-      p_cost: Number($("itemCost").value) || 0,
-      p_price: Number($("itemPrice").value) || 0
-    });
-  }
-
-  // 2. Save stock quantities (Opening, Added, Issues) exclusively for the selected target location
-  await db.rpc('upsert_location_inventory', {
-    p_location: targetLocation,
-    p_entry_date: dateKey(),
-    p_item_code: itemCode,
-    p_opening: Number($("itemOpening").value) || 0,
-    p_added: Number($("itemAdded").value) || 0,
-    p_issues: Number($("itemIssues").value) || 0,
-    p_comments: $("itemComments").value.trim()
-  });
-
-  await logAudit("Update Item", `Synced metadata for ${itemCode} globally and stock for location: ${targetLocation}`);
-
-  closeItemModal();
-  showSaveStatus();
-  loadCloudData();
-}
-
-async function deleteCurrentItem() {
-  if (!isManager()) return;
-  const itemCode = $("itemId").value.trim();
-  const description = $("itemDescription").value.trim();
-
-  if (confirm(`Are you sure you want to PERMANENTLY DELETE "${description}" (${itemCode}) globally across all locations?`)) {
-    await db.from('master_items').delete().eq('item_code', itemCode);
-    await db.from('inventory_entries').delete().eq('item_code', itemCode);
-    await logAudit("Delete Item", `Deleted master item ${itemCode} (${description})`);
-    closeItemModal();
-    loadCloudData();
-  }
-}
-
-function showSaveStatus() {
-  const status = $("saveStatus");
-  status.classList.remove("opacity-0");
-  clearTimeout(saveStatusTimer);
-  saveStatusTimer = setTimeout(() => status.classList.add("opacity-0"), 2000);
-}
-
-function filterCategory(cat) {
-  currentActiveCategory = cat;
-  document.querySelectorAll(".cat-btn").forEach(btn => {
-    if (btn.dataset.category === cat) {
-      btn.className = "cat-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-brand-600 text-white";
-    } else {
-      btn.className = "cat-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 text-slate-700";
-    }
-  });
-  renderTable();
-}
-
-function setToday() { $("selectedDate").value = localDateString(); loadCloudData(); }
-
-function changeDate(days) {
-  const date = new Date(dateKey() + "T12:00:00");
-  date.setDate(date.getDate() + days);
-  $("selectedDate").value = localDateString(date);
-  loadCloudData();
-}
-
-function updateDayLabel() {
-  const value = dateKey();
-  if (!value) { $("dayLabel").textContent = "--"; return; }
-  const date = new Date(value + "T12:00:00");
-  $("dayLabel").textContent = date.toLocaleDateString("en-US", { weekday:"long", year:"numeric", month:"short", day:"numeric" });
-}
-
-function renderChart() {
-  const ctx = $("categoryChart").getContext("2d");
-  const categories = ["Dry Food Items", "Soft Drinks", "Alcoholic", "Frozen", "Fresh Food Items"];
-  const totals = categories.map(cat => {
-    return currentItems.filter(i => i.category === cat).reduce((sum, i) => sum + Number(i.issues), 0);
-  });
-
-  if (chartInstance) chartInstance.destroy();
-
-  chartInstance = new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels: categories,
-      datasets: [{
-        label: 'Daily Issues Quantity',
-        data: totals,
-        backgroundColor: '#2563eb',
-        borderRadius: 6
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
-      scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
-    }
-  });
-}
-
-function exportCSV() {
-  if (!currentItems.length) { alert("No data to export."); return; }
-  let csv = "ID,Description,Category,Unit,Opening,Added,Issues,Closing,Cost Price,Sale Price,Est. Revenue,Comments\n";
-  currentItems.forEach(i => {
-    const closing = Number(i.opening) + Number(i.added) - Number(i.issues);
-    const rev = Number(i.issues) * Number(i.price);
-    csv += `"${i.item_code}","${i.description}","${i.category}","${i.unit}",${i.opening},${i.added},${i.issues},${closing},${i.cost},${i.price},${rev.toFixed(2)},"${i.comments || ''}"\n`;
-  });
-
-  const blob = new Blob([csv], { type: 'text/csv' });
-  const url = window.URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `inventory_${activeLocation}_${dateKey()}.csv`;
-  a.click();
-  window.URL.revokeObjectURL(url);
-}
-</script>
-</body>
-</html>
+-- 1. Enable Required Extensions
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
+-- 2. Create Locations Table
+CREATE TABLE IF NOT EXISTS locations (
+  id BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+  name TEXT UNIQUE NOT NULL
+);
+
+-- 3. Create Users Table
+CREATE TABLE IF NOT EXISTS store_users (
+  id BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+  username TEXT UNIQUE NOT NULL,
+  password TEXT NOT NULL,
+  role TEXT NOT NULL CHECK (role IN ('Manager', 'Storekeeper')),
+  location TEXT NOT NULL,
+  name TEXT NOT NULL,
+  disabled BOOLEAN DEFAULT false
+);
+
+-- 4. Create Daily Inventory Table with all required columns
+CREATE TABLE IF NOT EXISTS inventory_entries (
+  id BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+  location TEXT NOT NULL,
+  entry_date DATE NOT NULL,
+  item_code TEXT NOT NULL,
+  description TEXT NOT NULL,
+  category TEXT NOT NULL,
+  unit TEXT NOT NULL,
+  opening NUMERIC DEFAULT 0,
+  added NUMERIC DEFAULT 0,
+  issues NUMERIC DEFAULT 0,
+  cost NUMERIC DEFAULT 0,
+  price NUMERIC DEFAULT 0,
+  comments TEXT,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  UNIQUE(location, entry_date, item_code)
+);
+
+-- 5. Create Audit Logs Table
+CREATE TABLE IF NOT EXISTS audit_logs (
+  id BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  username TEXT,
+  role TEXT,
+  location TEXT,
+  action TEXT,
+  details TEXT
+);
+
+-- 6. Secure Credentials Verification Function
+CREATE OR REPLACE FUNCTION verify_store_user(input_username TEXT, input_password TEXT)
+RETURNS SETOF store_users 
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+  RETURN QUERY
+  SELECT * FROM store_users
+  WHERE username = input_username
+    AND password = input_password
+    AND disabled = false;
+END;
+$$;
+
+-- 7. Secure Upsert Function enforcing Storekeeper vs Manager privileges
+CREATE OR REPLACE FUNCTION secure_upsert_inventory(
+  p_username TEXT,
+  p_location TEXT,
+  p_entry_date DATE,
+  p_item_code TEXT,
+  p_description TEXT,
+  p_category TEXT,
+  p_unit TEXT,
+  p_opening NUMERIC,
+  p_added NUMERIC,
+  p_issues NUMERIC,
+  p_cost NUMERIC,
+  p_price NUMERIC,
+  p_comments TEXT
+)
+RETURNS VOID
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_user_role TEXT;
+  v_user_location TEXT;
+  v_user_disabled BOOLEAN;
+  v_existing_id BIGINT;
+BEGIN
+  SELECT role, location, disabled 
+  INTO v_user_role, v_user_location, v_user_disabled
+  FROM store_users
+  WHERE username = p_username;
+
+  IF NOT FOUND OR v_user_disabled THEN
+    RAISE EXCEPTION 'Access Denied: Invalid or disabled user account.';
+  END IF;
+
+  IF v_user_role = 'Storekeeper' AND v_user_location <> p_location THEN
+    RAISE EXCEPTION 'Access Denied: Storekeepers can only edit their assigned location.';
+  END IF;
+
+  -- Check if entry already exists
+  SELECT id INTO v_existing_id 
+  FROM inventory_entries 
+  WHERE location = p_location AND entry_date = p_entry_date AND item_code = p_item_code;
+
+  -- If Storekeeper tries to create a brand new item definition, block it (Storekeepers only log added/issues/comments on existing items)
+  IF v_user_role = 'Storekeeper' AND v_existing_id IS NULL THEN
+    RAISE EXCEPTION 'Permission Denied: Storekeepers cannot create new item catalog definitions. Contact a Manager.';
+  END IF;
+
+  IF v_user_role = 'Storekeeper' THEN
+    -- Storekeepers can ONLY update added, issues, and comments on existing rows
+    UPDATE inventory_entries
+    SET added = p_added,
+        issues = p_issues,
+        comments = p_comments,
+        updated_at = NOW()
+    WHERE location = p_location AND entry_date = p_entry_date AND item_code = p_item_code;
+  else
+    -- Managers have full rights to insert/update all fields
+    INSERT INTO inventory_entries (
+      location, entry_date, item_code, description, category, unit, 
+      opening, added, issues, cost, price, comments, updated_at
+    ) 
+    VALUES (
+      p_location, p_entry_date, p_item_code, p_description, p_category, p_unit, 
+      p_opening, p_added, p_issues, p_cost, p_price, p_comments, NOW()
+    )
+    ON CONFLICT (location, entry_date, item_code) 
+    DO UPDATE SET
+      description = EXCLUDED.description,
+      category = EXCLUDED.category,
+      unit = EXCLUDED.unit,
+      opening = EXCLUDED.opening,
+      added = EXCLUDED.added,
+      issues = EXCLUDED.issues,
+      cost = EXCLUDED.cost,
+      price = EXCLUDED.price,
+      comments = EXCLUDED.comments,
+      updated_at = NOW();
+  END IF;
+END;
+$$;
+
+-- 8. Low Stock Report Function
+CREATE OR REPLACE FUNCTION get_low_stock_report(p_location TEXT, p_threshold NUMERIC DEFAULT 5)
+RETURNS TABLE (
+  item_code TEXT,
+  description TEXT,
+  category TEXT,
+  closing_stock NUMERIC,
+  unit TEXT
+) 
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+  RETURN QUERY
+  SELECT 
+    i.item_code,
+    i.description,
+    i.category,
+    (i.opening + i.added - i.issues) AS closing_stock,
+    i.unit
+  FROM inventory_entries i
+  WHERE i.location = p_location
+    AND i.entry_date = CURRENT_DATE
+    AND (i.opening + i.added - i.issues) <= p_threshold;
+END;
+$$;
+
+-- 9. RLS & Initial Seed Data
+ALTER TABLE locations ENABLE ROW LEVEL SECURITY;
+ALTER TABLE store_users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE inventory_entries ENABLE ROW LEVEL SECURITY;
+ALTER TABLE audit_logs ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Public Locations" ON locations FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Public Users" ON store_users FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Public Inventory" ON inventory_entries FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Public Audit" ON audit_logs FOR ALL USING (true) WITH CHECK (true);
+
+INSERT INTO locations (name) VALUES ('Bentiu Main Camp'), ('Juba Depot') ON CONFLICT DO NOTHING;
+
+INSERT INTO store_users (username, password, role, location, name) 
+VALUES 
+  ('admin', 'admin2026', 'Manager', 'All Locations', 'General Manager'),
+  ('store_bentiu', 'bentiu2026', 'Storekeeper', 'Bentiu Main Camp', 'Bentiu Storekeeper')
+ON CONFLICT (username) DO NOTHING;
