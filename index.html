@@ -4,15 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>GAS GENERAL STORE MANAGER - Cloud Real-Time System</title>
-  <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- FontAwesome Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <!-- Supabase Cloud SDK -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <!-- SheetJS (XLSX) for Excel Export & Import -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script>
     tailwind.config = { 
@@ -39,7 +34,6 @@
 </head>
 <body class="bg-slate-100 text-slate-800 font-sans min-h-screen flex flex-col">
 
-  <!-- Hidden Excel File Input -->
   <input type="file" id="excelFileInput" accept=".xlsx, .xls, .csv" class="hidden">
 
   <!-- Login Modal -->
@@ -99,7 +93,7 @@
 
   <!-- Main Content -->
   <main class="flex-grow max-w-7xl w-full mx-auto px-4 py-6 space-y-6">
-    <!-- Date and Location Selector Bar -->
+    <!-- Date & Location Selector Bar -->
     <section class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col md:flex-row justify-between items-center gap-4">
       <div class="flex items-center gap-2 flex-wrap">
         <button id="prevDateBtn" class="bg-slate-100 hover:bg-slate-200 px-3 py-2 rounded-lg text-sm font-semibold transition"><i class="fa-solid fa-chevron-left"></i></button>
@@ -108,7 +102,7 @@
         <button id="todayBtn" class="bg-brand-50 hover:bg-brand-100 text-brand-700 px-3 py-2 rounded-lg text-xs font-bold transition">Today</button>
       </div>
       <div id="managerLocationBox" class="hidden items-center gap-2">
-        <label for="locationSelector" class="text-xs font-semibold text-slate-500">Location:</label>
+        <label for="locationSelector" class="text-xs font-semibold text-slate-500">Active View Location:</label>
         <select id="locationSelector" class="bg-slate-50 border border-slate-300 rounded-lg text-xs p-2 font-semibold text-slate-800 focus:ring-brand-500"></select>
       </div>
       <div class="flex items-center gap-3">
@@ -117,7 +111,7 @@
       </div>
     </section>
 
-    <!-- Operational & Financial KPI Cards -->
+    <!-- Operational KPI Cards -->
     <section class="grid grid-cols-2 md:grid-cols-5 gap-4">
       <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200"><div class="flex justify-between items-center"><span class="text-xs font-semibold text-slate-400 uppercase">Items Tracked</span><i class="fa-solid fa-list text-brand-500 bg-brand-50 p-2 rounded-lg"></i></div><h3 id="statTotalItems" class="text-2xl font-bold mt-2 text-slate-800">0</h3></div>
       <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200"><div class="flex justify-between items-center"><span class="text-xs font-semibold text-slate-400 uppercase">Daily Issues</span><i class="fa-solid fa-hand-holding text-amber-500 bg-amber-50 p-2 rounded-lg"></i></div><h3 id="statTotalIssues" class="text-2xl font-bold mt-2 text-slate-800">0</h3></div>
@@ -166,41 +160,12 @@
       <div id="emptyState" class="hidden p-8 text-center text-sm text-slate-500">No inventory items found for this date/location in the cloud.</div>
     </section>
 
-    <!-- Category Chart Section -->
+    <!-- Category Chart -->
     <section class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
       <h3 class="text-sm font-bold text-slate-800 mb-4 flex items-center"><i class="fa-solid fa-chart-bar text-brand-600 mr-2"></i>Daily Issues Breakdown by Category</h3>
       <div class="h-64"><canvas id="categoryChart"></canvas></div>
     </section>
   </main>
-
-  <!-- Change Password Modal -->
-  <div id="changePasswordModal" class="fixed inset-0 bg-slate-900/70 hidden items-center justify-center z-50 p-4">
-    <div class="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl space-y-4">
-      <div class="flex justify-between items-center border-b pb-3">
-        <h3 class="font-bold text-base text-slate-800"><i class="fa-solid fa-key text-amber-500 mr-2"></i>Change My Password</h3>
-        <button id="closeChangePassX" type="button"><i class="fa-solid fa-xmark text-lg"></i></button>
-      </div>
-      <form id="changePasswordForm" class="space-y-3">
-        <div>
-          <label class="block text-xs font-semibold mb-1 text-slate-600">Current Password</label>
-          <input id="myCurrentPassword" type="password" required class="w-full border rounded-lg px-3 py-2 text-xs">
-        </div>
-        <div>
-          <label class="block text-xs font-semibold mb-1 text-slate-600">New Password (Min 8 characters)</label>
-          <input id="myNewPassword" type="password" required minlength="8" class="w-full border rounded-lg px-3 py-2 text-xs">
-        </div>
-        <div>
-          <label class="block text-xs font-semibold mb-1 text-slate-600">Confirm New Password</label>
-          <input id="myConfirmPassword" type="password" required minlength="8" class="w-full border rounded-lg px-3 py-2 text-xs">
-        </div>
-        <div id="changePassError" class="hidden text-xs text-rose-600 font-semibold text-center"></div>
-        <div class="flex justify-end gap-2 pt-2">
-          <button id="cancelChangePassBtn" type="button" class="bg-slate-100 hover:bg-slate-200 px-4 py-2 rounded-lg text-xs font-semibold">Cancel</button>
-          <button type="submit" class="bg-amber-600 hover:bg-amber-700 text-white px-5 py-2 rounded-lg text-xs font-semibold shadow-md">Update Password</button>
-        </div>
-      </form>
-    </div>
-  </div>
 
   <!-- Add/Edit Inventory Item Modal -->
   <div id="itemModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
@@ -211,6 +176,13 @@
       </div>
       <form id="itemForm" class="p-6 space-y-4">
         <input type="hidden" id="editEntryId" value="">
+        
+        <!-- Targeted Store Location Dropdown for Manager -->
+        <div id="modalLocationWrapper" class="bg-amber-50 border border-amber-200 p-3 rounded-lg">
+          <label class="block text-xs font-bold text-amber-900 mb-1"><i class="fa-solid fa-store mr-1 text-amber-600"></i>Target Store Location for this Stock Edit:</label>
+          <select id="itemTargetLocation" class="w-full bg-white border border-amber-300 rounded-lg px-3 py-1.5 text-xs font-bold text-slate-800 focus:ring-amber-500"></select>
+        </div>
+
         <div class="grid grid-cols-3 gap-3">
           <div><label class="block text-xs font-semibold mb-1 text-slate-600">Item ID</label><input id="itemId" readonly class="w-full bg-slate-100 border rounded-lg px-3 py-2 text-xs font-mono" placeholder="Auto"></div>
           <div class="col-span-2"><label class="block text-xs font-semibold mb-1 text-slate-600">Item Description</label><input id="itemDescription" required maxlength="120" class="w-full border rounded-lg px-3 py-2 text-xs"></div>
@@ -240,122 +212,6 @@
     </div>
   </div>
 
-  <!-- Reorder & Supplier Draft Modal -->
-  <div id="reorderModal" class="fixed inset-0 bg-slate-900/70 hidden items-center justify-center z-50 p-4">
-    <div class="bg-white rounded-xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto space-y-4">
-      <div class="flex justify-between items-center border-b pb-3">
-        <h2 class="font-bold text-base text-slate-800 flex items-center gap-2"><i class="fa-solid fa-cart-flatbed text-amber-500"></i>Reorder & Low Stock Draft</h2>
-        <button id="closeReorderX" type="button"><i class="fa-solid fa-xmark"></i></button>
-      </div>
-      <p class="text-xs text-slate-500">Items below or equal to 5 units in closing stock at <b id="reorderLocationLabel">--</b>:</p>
-      <div id="reorderItemsList" class="space-y-2 text-xs"></div>
-      <div>
-        <label class="block text-xs font-semibold mb-1 text-slate-700">Supplier Order Text / WhatsApp Message Draft:</label>
-        <textarea id="reorderDraftText" rows="6" readonly class="w-full bg-slate-50 border rounded-lg p-3 text-xs font-mono"></textarea>
-      </div>
-      <div class="flex justify-end gap-2">
-        <button id="copyReorderBtn" type="button" class="bg-brand-600 hover:bg-brand-700 text-white px-4 py-2 rounded-lg text-xs font-semibold"><i class="fa-solid fa-copy mr-1"></i>Copy Text</button>
-        <button id="closeReorderBtn" type="button" class="bg-slate-100 hover:bg-slate-200 px-4 py-2 rounded-lg text-xs font-semibold">Close</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Audit Log Viewer Modal -->
-  <div id="auditModal" class="fixed inset-0 bg-slate-900/70 hidden items-center justify-center z-50 p-4">
-    <div class="bg-white rounded-xl p-6 w-full max-w-3xl max-h-[90vh] overflow-y-auto space-y-4">
-      <div class="flex justify-between items-center border-b pb-3">
-        <h2 class="font-bold text-base text-slate-800 flex items-center gap-2"><i class="fa-solid fa-clock-rotate-left text-brand-600"></i>Storekeeper Activity & Audit Log</h2>
-        <button id="closeAuditX" type="button"><i class="fa-solid fa-xmark"></i></button>
-      </div>
-      <div id="auditList" class="space-y-2 text-xs"></div>
-      <div class="flex justify-end">
-        <button id="closeAuditBtn" type="button" class="bg-slate-100 hover:bg-slate-200 px-4 py-2 rounded-lg text-xs font-semibold">Close</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Store Locations & Accounts Management Modal -->
-  <div id="userManagerModal" class="fixed inset-0 bg-slate-900/70 hidden items-center justify-center z-50 p-4">
-    <div class="bg-white rounded-xl p-6 w-full max-w-2xl max-h-[92vh] overflow-y-auto space-y-4">
-      <div class="flex justify-between items-center"><h2 class="font-bold text-lg text-slate-800">Manage Store Locations & Accounts</h2><button id="closeUsersX" type="button"><i class="fa-solid fa-xmark"></i></button></div>
-      
-      <!-- Store Locations List & Add Form -->
-      <div class="space-y-2">
-        <h3 class="font-bold text-sm text-slate-800">Store Locations</h3>
-        <form id="locationForm" class="flex flex-col sm:flex-row gap-2">
-          <input id="newLocationName" required maxlength="80" placeholder="New location name (e.g. Wau Depot)" class="border rounded-lg p-2 flex-1 text-sm">
-          <button type="submit" class="bg-brand-600 hover:bg-brand-700 text-white rounded-lg px-4 py-2 text-sm font-semibold">Add Store Location</button>
-        </form>
-        <div id="locationList" class="space-y-1.5 pt-2"></div>
-      </div>
-
-      <hr class="my-4">
-
-      <!-- Storekeeper Account Creation -->
-      <h3 class="font-bold text-sm text-slate-800">Create Account (Manager or Storekeeper)</h3>
-      <form id="userForm" class="grid sm:grid-cols-2 gap-3">
-        <input id="newUsername" required minlength="3" maxlength="40" autocomplete="off" placeholder="Username (e.g. manager_juba)" class="border rounded-lg p-2 text-sm">
-        <input id="newDisplayName" required maxlength="80" placeholder="Full name" class="border rounded-lg p-2 text-sm">
-        <input id="newPassword" required minlength="8" type="password" autocomplete="new-password" placeholder="Password (8+ characters)" class="border rounded-lg p-2 text-sm">
-        <select id="newUserRole" required class="border rounded-lg p-2 text-sm font-semibold">
-          <option value="Storekeeper">Storekeeper</option>
-          <option value="Manager">Manager</option>
-        </select>
-        <select id="newUserLocation" required class="border rounded-lg p-2 text-sm sm:col-span-2"></select>
-        <button type="submit" class="sm:col-span-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg p-2 font-semibold text-sm shadow-md">Create Account</button>
-      </form>
-
-      <hr class="my-4">
-
-      <!-- Active Accounts List -->
-      <h3 class="font-bold text-sm text-slate-800">Existing Accounts & Privileges</h3>
-      <div id="accountList" class="space-y-2 text-sm"></div>
-      <button id="closeUsersBtn" type="button" class="w-full bg-slate-100 rounded-lg p-2 text-sm font-semibold mt-2">Close</button>
-    </div>
-  </div>
-
-  <!-- Edit User Privileges Modal -->
-  <div id="editUserModal" class="fixed inset-0 bg-slate-900/80 hidden items-center justify-center z-50 p-4">
-    <div class="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl space-y-4">
-      <div class="flex justify-between items-center border-b pb-3">
-        <h3 class="font-bold text-base text-slate-800"><i class="fa-solid fa-user-pen text-purple-600 mr-2"></i>Edit User Privileges</h3>
-        <button id="closeEditUserX" type="button"><i class="fa-solid fa-xmark text-lg"></i></button>
-      </div>
-      <form id="editUserForm" class="space-y-3">
-        <input type="hidden" id="editUserId">
-        <div>
-          <label class="block text-xs font-semibold mb-1 text-slate-600">Username</label>
-          <input id="editUsernameDisplay" disabled class="w-full bg-slate-100 border rounded-lg px-3 py-2 text-xs font-mono text-slate-500">
-        </div>
-        <div>
-          <label class="block text-xs font-semibold mb-1 text-slate-600">Full Name</label>
-          <input id="editUserFullName" required class="w-full border rounded-lg px-3 py-2 text-xs">
-        </div>
-        <div class="grid grid-cols-2 gap-2">
-          <div>
-            <label class="block text-xs font-semibold mb-1 text-slate-600">Role / Privilege</label>
-            <select id="editUserRole" required class="w-full border rounded-lg px-3 py-2 text-xs font-semibold">
-              <option value="Storekeeper">Storekeeper</option>
-              <option value="Manager">Manager</option>
-            </select>
-          </div>
-          <div>
-            <label class="block text-xs font-semibold mb-1 text-slate-600">Assigned Location</label>
-            <select id="editUserLocation" required class="w-full border rounded-lg px-3 py-2 text-xs font-semibold"></select>
-          </div>
-        </div>
-        <div>
-          <label class="block text-xs font-semibold mb-1 text-slate-600">New Password (leave blank to keep current)</label>
-          <input id="editUserPassword" type="password" placeholder="Min 8 characters if changing" class="w-full border rounded-lg px-3 py-2 text-xs">
-        </div>
-        <div class="flex justify-end gap-2 pt-2">
-          <button id="cancelEditUserBtn" type="button" class="bg-slate-100 hover:bg-slate-200 px-4 py-2 rounded-lg text-xs font-semibold">Cancel</button>
-          <button type="submit" class="bg-purple-600 hover:bg-purple-700 text-white px-5 py-2 rounded-lg text-xs font-semibold shadow-md">Save Changes</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
 <script>
 "use strict";
 
@@ -370,6 +226,7 @@ let currentActiveCategory = "All";
 let chartInstance = null;
 let saveStatusTimer = null;
 let currentItems = [];
+let allLocationsList = [];
 
 const $ = id => document.getElementById(id);
 const isManager = () => !!currentUser && currentUser.role === "Manager";
@@ -403,14 +260,12 @@ window.addEventListener("DOMContentLoaded", () => {
 function bindEvents() {
   $("loginForm").addEventListener("submit", handleLogin);
   $("logoutBtn").addEventListener("click", () => location.reload());
-  $("userPasswordBtn").addEventListener("click", openChangePasswordModal);
-  $("manageUsersBtn").addEventListener("click", openUserManager);
-  $("auditBtn").addEventListener("click", openAuditModal);
-  $("reorderBtn").addEventListener("click", openReorderModal);
+  $("locationSelector").addEventListener("change", (e) => {
+    activeLocation = e.target.value;
+    $("locationBadge").textContent = activeLocation;
+    loadCloudData();
+  });
   $("exportBtn").addEventListener("click", exportCSV);
-  $("downloadTemplateBtn").addEventListener("click", downloadMasterTemplate);
-  $("uploadExcelBtn").addEventListener("click", () => $("excelFileInput").click());
-  $("excelFileInput").addEventListener("change", handleExcelUpload);
   $("printBtn").addEventListener("click", () => window.print());
   $("newItemBtn").addEventListener("click", openNewItemModal);
   $("selectedDate").addEventListener("change", loadCloudData);
@@ -426,23 +281,9 @@ function bindEvents() {
   $("deleteItemBtn").addEventListener("click", deleteCurrentItem);
   $("closeItemX").addEventListener("click", closeItemModal);
   $("cancelItemBtn").addEventListener("click", closeItemModal);
-  $("locationForm").addEventListener("submit", createLocation);
-  $("userForm").addEventListener("submit", createAccount);
-  $("closeUsersX").addEventListener("click", closeUserManager);
-  $("closeUsersBtn").addEventListener("click", closeUserManager);
-  $("closeAuditX").addEventListener("click", closeAuditModal);
-  $("closeAuditBtn").addEventListener("click", closeAuditModal);
-  $("closeReorderX").addEventListener("click", closeReorderModal);
-  $("closeReorderBtn").addEventListener("click", closeReorderModal);
-  $("copyReorderBtn").addEventListener("click", copyReorderText);
 
-  $("editUserForm").addEventListener("submit", saveUserEdits);
-  $("closeEditUserX").addEventListener("click", closeEditUserModal);
-  $("cancelEditUserBtn").addEventListener("click", closeEditUserModal);
-
-  $("changePasswordForm").addEventListener("submit", changeMyPassword);
-  $("closeChangePassX").addEventListener("click", closeChangePasswordModal);
-  $("cancelChangePassBtn").addEventListener("click", closeChangePasswordModal);
+  // Auto-reload stock input figures when manager switches store location inside the edit item modal
+  $("itemTargetLocation").addEventListener("change", loadStockDataForModalLocation);
 }
 
 async function handleLogin(e) {
@@ -466,24 +307,17 @@ async function handleLogin(e) {
   $("loginModal").classList.add("hidden");
   $("displayUserName").textContent = `${currentUser.name} (${currentUser.role})`;
 
+  await loadLocations();
+
   if (currentUser.role === "Manager") {
     activeLocation = "Juba Depot";
     $("managerLocationBox").classList.remove("hidden");
     $("managerLocationBox").classList.add("flex");
-    $("manageUsersBtn").classList.remove("hidden");
-    $("auditBtn").classList.remove("hidden");
     $("newItemBtn").classList.remove("hidden");
-    $("downloadTemplateBtn").classList.remove("hidden");
-    $("uploadExcelBtn").classList.remove("hidden");
-    await loadLocations();
   } else {
     activeLocation = currentUser.location;
     $("managerLocationBox").classList.add("hidden");
-    $("manageUsersBtn").classList.add("hidden");
-    $("auditBtn").classList.add("hidden");
     $("newItemBtn").classList.add("hidden");
-    $("downloadTemplateBtn").classList.add("hidden");
-    $("uploadExcelBtn").classList.add("hidden");
   }
 
   $("locationBadge").textContent = activeLocation;
@@ -494,37 +328,21 @@ async function handleLogin(e) {
 async function loadLocations() {
   const { data } = await db.from('locations').select('name').order('name');
   if (data && data.length) {
+    allLocationsList = data.map(l => l.name);
     const select = $("locationSelector");
     select.replaceChildren();
-    data.forEach(l => {
+    allLocationsList.forEach(name => {
       const opt = document.createElement("option");
-      opt.value = l.name; opt.textContent = l.name; select.appendChild(opt);
+      opt.value = name; opt.textContent = name; select.appendChild(opt);
     });
     select.value = activeLocation;
-    
-    const userLocSelect = $("newUserLocation");
-    if (userLocSelect) {
-      userLocSelect.replaceChildren();
-      data.forEach(l => {
-        const opt = document.createElement("option");
-        opt.value = l.name; opt.textContent = l.name; userLocSelect.appendChild(opt);
-      });
-      const optAll = document.createElement("option");
-      optAll.value = "All Locations"; optAll.textContent = "All Locations";
-      userLocSelect.appendChild(optAll);
-    }
 
-    const editUserLocSelect = $("editUserLocation");
-    if (editUserLocSelect) {
-      editUserLocSelect.replaceChildren();
-      data.forEach(l => {
-        const opt = document.createElement("option");
-        opt.value = l.name; opt.textContent = l.name; editUserLocSelect.appendChild(opt);
-      });
-      const optAll = document.createElement("option");
-      optAll.value = "All Locations"; optAll.textContent = "All Locations";
-      editUserLocSelect.appendChild(optAll);
-    }
+    const modalLocSelect = $("itemTargetLocation");
+    modalLocSelect.replaceChildren();
+    allLocationsList.forEach(name => {
+      const opt = document.createElement("option");
+      opt.value = name; opt.textContent = name; modalLocSelect.appendChild(opt);
+    });
   }
 }
 
@@ -533,11 +351,9 @@ async function loadCloudData() {
   const date = dateKey();
   updateDayLabel();
 
-  // 1. Fetch Master Catalog
   const { data: masterItems } = await db.from('master_items').select('*').order('item_code');
   if (!masterItems || masterItems.length === 0) return;
 
-  // 2. Fetch Daily Quantities strictly for this store location & date
   let { data: dailyEntries } = await db.from('inventory_entries')
     .select('*')
     .eq('location', activeLocation)
@@ -580,30 +396,8 @@ async function loadCloudData() {
       .eq('entry_date', date);
     
     dailyEntries = refetched || [];
-  } else {
-    // Insert any missing master items into location log
-    const existingCodes = new Set(dailyEntries.map(e => e.item_code));
-    const missingMaster = masterItems.filter(m => !existingCodes.has(m.item_code));
-    if (missingMaster.length > 0) {
-      const extraEntries = missingMaster.map(m => ({
-        location: activeLocation,
-        entry_date: date,
-        item_code: m.item_code,
-        opening: 0,
-        added: 0,
-        issues: 0,
-        comments: ""
-      }));
-      await db.from('inventory_entries').insert(extraEntries);
-      const { data: refetched2 } = await db.from('inventory_entries')
-        .select('*')
-        .eq('location', activeLocation)
-        .eq('entry_date', date);
-      dailyEntries = refetched2 || dailyEntries;
-    }
   }
 
-  // 3. Map values using the SQL view data structure
   const masterMap = new Map(masterItems.map(m => [m.item_code, m]));
 
   currentItems = dailyEntries.map(entry => {
@@ -665,7 +459,7 @@ function renderTable() {
       <td class="p-3 text-right font-mono text-emerald-600">$${rev.toFixed(2)}</td>
       <td class="p-3 text-slate-500">${item.comments || '--'}</td>
       <td class="p-3 text-center">
-        <button onclick="openEditItemModal(${item.id})" class="bg-amber-100 hover:bg-amber-200 text-amber-800 px-2.5 py-1 rounded text-[10px] font-bold"><i class="fa-solid fa-pen mr-1"></i>${isManager() ? 'Edit' : 'Log Stock'}</button>
+        <button onclick="openEditItemModal(${item.id})" class="bg-amber-100 hover:bg-amber-200 text-amber-800 px-2.5 py-1 rounded text-[10px] font-bold"><i class="fa-solid fa-pen mr-1"></i>${isManager() ? 'Edit Item / Store' : 'Log Stock'}</button>
       </td>
     `;
     tbody.appendChild(tr);
@@ -673,11 +467,7 @@ function renderTable() {
 }
 
 function updateKPIs() {
-  let totalIssues = 0;
-  let totalRevenue = 0;
-  let grossProfit = 0;
-  let lowStock = 0;
-
+  let totalIssues = 0, totalRevenue = 0, grossProfit = 0, lowStock = 0;
   currentItems.forEach(item => {
     const issues = Number(item.issues) || 0;
     const closing = Number(item.opening) + Number(item.added) - issues;
@@ -697,76 +487,6 @@ function updateKPIs() {
   $("statLowStock").textContent = lowStock;
 }
 
-function downloadMasterTemplate() {
-  const masterData = currentItems.map(i => ({
-    "Item Code": i.item_code,
-    "Item Description": i.description,
-    "Category": i.category,
-    "Unit": i.unit,
-    "Cost Price": i.cost,
-    "Selling Price": i.price
-  }));
-
-  const worksheet = XLSX.utils.json_to_sheet(masterData);
-  const workbook = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook, worksheet, "Master Catalog");
-
-  worksheet["!cols"] = [{ wch: 12 }, { wch: 28 }, { wch: 20 }, { wch: 10 }, { wch: 12 }, { wch: 14 }];
-  XLSX.writeFile(workbook, "GAS_Master_Inventory_Catalog.xlsx");
-}
-
-async function handleExcelUpload(e) {
-  if (!isManager()) return;
-  const file = e.target.files[0];
-  if (!file) return;
-
-  const reader = new FileReader();
-  reader.onload = async (evt) => {
-    try {
-      const data = new Uint8Array(evt.target.result);
-      const workbook = XLSX.read(data, { type: 'array' });
-      const firstSheetName = workbook.SheetNames[0];
-      const worksheet = workbook.Sheets[firstSheetName];
-      const rows = XLSX.utils.sheet_to_json(worksheet);
-
-      if (!rows || rows.length === 0) {
-        alert("The uploaded Excel file contains no data.");
-        return;
-      }
-
-      for (const row of rows) {
-        const itemCode = String(row["Item Code"] || row["ItemCode"] || row["ID"] || "").trim();
-        const description = String(row["Item Description"] || row["Description"] || "").trim();
-        const category = String(row["Category"] || "Dry Food Items").trim();
-        const unit = String(row["Unit"] || "Pcs").trim();
-        const cost = Number(row["Cost Price"] || row["Cost"] || 0);
-        const price = Number(row["Selling Price"] || row["Price"] || 0);
-
-        if (!itemCode || !description) continue;
-
-        await db.from('master_items').upsert([{
-          item_code: itemCode,
-          description: description,
-          category: category,
-          unit: unit,
-          cost: cost,
-          price: price,
-          updated_at: new Date().toISOString()
-        }]);
-      }
-
-      await logAudit("Excel Upload", `Uploaded ${rows.length} master catalog items`);
-      alert(`Master inventory catalog updated successfully!`);
-      e.target.value = "";
-      showSaveStatus();
-      loadCloudData();
-    } catch (err) {
-      alert("Failed to process Excel file. Please use the exported Master Template.");
-    }
-  };
-  reader.readAsArrayBuffer(file);
-}
-
 function openEditItemModal(id) {
   const item = currentItems.find(i => i.id === id);
   if (!item) return;
@@ -779,12 +499,18 @@ function openEditItemModal(id) {
   $("itemDescription").value = item.description;
   $("itemCategory").value = item.category;
   $("itemSpec").value = item.unit;
-  $("itemOpening").value = item.opening;
-  $("itemAdded").value = item.added;
-  $("itemIssues").value = item.issues;
   $("itemCost").value = item.cost;
   $("itemPrice").value = item.price;
-  $("itemComments").value = item.comments || "";
+
+  if (manager) {
+    $("modalLocationWrapper").classList.remove("hidden");
+    $("itemTargetLocation").value = activeLocation;
+    $("deleteItemBtn").classList.remove("hidden");
+  } else {
+    $("modalLocationWrapper").classList.add("hidden");
+    $("itemTargetLocation").value = activeLocation;
+    $("deleteItemBtn").classList.add("hidden");
+  }
 
   $("itemDescription").disabled = !manager;
   $("itemCategory").disabled = !manager;
@@ -793,14 +519,35 @@ function openEditItemModal(id) {
   $("itemCost").disabled = !manager;
   $("itemPrice").disabled = !manager;
 
-  if (manager) {
-    $("deleteItemBtn").classList.remove("hidden");
-  } else {
-    $("deleteItemBtn").classList.add("hidden");
-  }
+  loadStockDataForModalLocation();
 
   $("itemModal").classList.remove("hidden");
   $("itemModal").classList.add("flex");
+}
+
+async function loadStockDataForModalLocation() {
+  const itemCode = $("itemId").value;
+  const targetLocation = isManager() ? $("itemTargetLocation").value : activeLocation;
+  const date = dateKey();
+
+  const { data } = await db.from('inventory_entries')
+    .select('*')
+    .eq('location', targetLocation)
+    .eq('entry_date', date)
+    .eq('item_code', itemCode)
+    .maybeSingle();
+
+  if (data) {
+    $("itemOpening").value = data.opening || 0;
+    $("itemAdded").value = data.added || 0;
+    $("itemIssues").value = data.issues || 0;
+    $("itemComments").value = data.comments || "";
+  } else {
+    $("itemOpening").value = 0;
+    $("itemAdded").value = 0;
+    $("itemIssues").value = 0;
+    $("itemComments").value = "";
+  }
 }
 
 function openNewItemModal() {
@@ -826,6 +573,9 @@ function openNewItemModal() {
   $("itemPrice").value = "0.00";
   $("itemComments").value = "";
 
+  $("modalLocationWrapper").classList.remove("hidden");
+  $("itemTargetLocation").value = activeLocation;
+
   $("itemDescription").disabled = false;
   $("itemCategory").disabled = false;
   $("itemSpec").disabled = false;
@@ -845,9 +595,9 @@ function closeItemModal() {
 
 async function saveItem(e) {
   e.preventDefault();
-  const entryId = Number($("editEntryId").value);
   const manager = isManager();
   const itemCode = $("itemId").value.trim();
+  const targetLocation = manager ? $("itemTargetLocation").value : activeLocation;
 
   if (manager) {
     await db.from('master_items').upsert([{
@@ -861,27 +611,18 @@ async function saveItem(e) {
     }]);
   }
 
-  const stockPayload = {
-    added: Number($("itemAdded").value) || 0,
-    issues: Number($("itemIssues").value) || 0,
-    comments: $("itemComments").value.trim(),
-    updated_at: new Date().toISOString()
-  };
+  // Strictly save stock values to target location only
+  await db.rpc('upsert_location_inventory', {
+    p_location: targetLocation,
+    p_entry_date: dateKey(),
+    p_item_code: itemCode,
+    p_opening: Number($("itemOpening").value) || 0,
+    p_added: Number($("itemAdded").value) || 0,
+    p_issues: Number($("itemIssues").value) || 0,
+    p_comments: $("itemComments").value.trim()
+  });
 
-  if (manager) {
-    stockPayload.opening = Number($("itemOpening").value) || 0;
-  }
-
-  if (entryId) {
-    await db.from('inventory_entries').update(stockPayload).eq('id', entryId);
-    await logAudit(manager ? "Update Item" : "Log Stock", `Updated item ${itemCode} at ${activeLocation}`);
-  } else if (manager) {
-    stockPayload.location = activeLocation;
-    stockPayload.entry_date = dateKey();
-    stockPayload.item_code = itemCode;
-    await db.from('inventory_entries').insert([stockPayload]);
-    await logAudit("Add Item", `Added new master item ${itemCode} at ${activeLocation}`);
-  }
+  await logAudit("Update Item", `Updated ${itemCode} for location: ${targetLocation}`);
 
   closeItemModal();
   showSaveStatus();
@@ -900,52 +641,6 @@ async function deleteCurrentItem() {
     closeItemModal();
     loadCloudData();
   }
-}
-
-function openChangePasswordModal() {
-  $("myCurrentPassword").value = "";
-  $("myNewPassword").value = "";
-  $("myConfirmPassword").value = "";
-  $("changePassError").classList.add("hidden");
-  $("changePasswordModal").classList.remove("hidden");
-  $("changePasswordModal").classList.add("flex");
-}
-
-function closeChangePasswordModal() {
-  $("changePasswordModal").classList.add("hidden");
-  $("changePasswordModal").classList.remove("flex");
-}
-
-async function changeMyPassword(e) {
-  e.preventDefault();
-  const currentPass = $("myCurrentPassword").value.trim();
-  const newPass = $("myNewPassword").value.trim();
-  const confirmPass = $("myConfirmPassword").value.trim();
-  const errDiv = $("changePassError");
-
-  if (currentPass !== currentUser.password) {
-    errDiv.textContent = "Current password is incorrect.";
-    errDiv.classList.remove("hidden");
-    return;
-  }
-
-  if (newPass !== confirmPass) {
-    errDiv.textContent = "New passwords do not match.";
-    errDiv.classList.remove("hidden");
-    return;
-  }
-
-  const { error } = await db.from('store_users').update({ password: newPass }).eq('id', currentUser.id);
-  if (error) {
-    errDiv.textContent = "Error updating password.";
-    errDiv.classList.remove("hidden");
-    return;
-  }
-
-  currentUser.password = newPass;
-  await logAudit("Password Change", `User ${currentUser.username} changed their own password`);
-  alert("Your password has been updated successfully!");
-  closeChangePasswordModal();
 }
 
 function showSaveStatus() {
@@ -1010,247 +705,6 @@ function renderChart() {
       scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
     }
   });
-}
-
-async function openUserManager() {
-  if (!isManager()) return;
-  await loadLocationsListModal();
-  await loadAccountsListModal();
-  $("userManagerModal").classList.remove("hidden");
-  $("userManagerModal").classList.add("flex");
-}
-
-function closeUserManager() {
-  $("userManagerModal").classList.add("hidden");
-  $("userManagerModal").classList.remove("flex");
-}
-
-async function loadLocationsListModal() {
-  const { data } = await db.from('locations').select('*').order('name');
-  const container = $("locationList");
-  container.replaceChildren();
-
-  if (data) {
-    data.forEach(loc => {
-      const div = document.createElement("div");
-      div.className = "flex justify-between items-center bg-slate-50 border p-2 rounded-lg text-xs";
-      div.innerHTML = `
-        <span class="font-bold">${loc.name}</span>
-        <button onclick="deleteLocation('${loc.name}')" class="text-rose-600 hover:underline font-semibold"><i class="fa-solid fa-trash mr-1"></i>Delete</button>
-      `;
-      container.appendChild(div);
-    });
-  }
-}
-
-async function createLocation(e) {
-  e.preventDefault();
-  if (!isManager()) return;
-  const name = $("newLocationName").value.trim();
-  if (!name) return;
-
-  const { error } = await db.from('locations').insert([{ name }]);
-  if (error) {
-    alert("Location already exists or error occurred.");
-    return;
-  }
-
-  $("newLocationName").value = "";
-  await logAudit("Create Location", `Created store location: ${name}`);
-  await loadLocations();
-  await loadLocationsListModal();
-}
-
-async function deleteLocation(name) {
-  if (!isManager()) return;
-  if (confirm(`Are you sure you want to delete store location "${name}"?`)) {
-    await db.from('locations').delete().eq('name', name);
-    await logAudit("Delete Location", `Deleted store location: ${name}`);
-    await loadLocations();
-    await loadLocationsListModal();
-  }
-}
-
-async function loadAccountsListModal() {
-  const { data } = await db.from('store_users').select('*').order('username');
-  const container = $("accountList");
-  container.replaceChildren();
-
-  if (data) {
-    data.forEach(u => {
-      const div = document.createElement("div");
-      div.className = "flex justify-between items-center bg-slate-50 border p-2 rounded-lg text-xs";
-      div.innerHTML = `
-        <div><b>${u.username}</b> (${u.name}) - <span class="text-brand-600">${u.role}</span> @ <span class="font-semibold">${u.location}</span></div>
-        <div class="flex items-center gap-2">
-          <button onclick="openEditUserModal(${u.id})" class="bg-purple-100 hover:bg-purple-200 text-purple-800 px-2 py-1 rounded font-bold"><i class="fa-solid fa-pen mr-1"></i>Edit</button>
-          ${u.username !== 'admin' ? `<button onclick="toggleUser(${u.id}, ${u.disabled})" class="${u.disabled ? 'text-emerald-600' : 'text-rose-600'} font-bold hover:underline">${u.disabled ? 'Enable' : 'Disable'}</button>` : ''}
-        </div>
-      `;
-      container.appendChild(div);
-    });
-  }
-}
-
-async function createAccount(e) {
-  e.preventDefault();
-  if (!isManager()) return;
-  const username = $("newUsername").value.trim();
-  const name = $("newDisplayName").value.trim();
-  const password = $("newPassword").value.trim();
-  const role = $("newUserRole").value;
-  const location = $("newUserLocation").value;
-
-  const { error } = await db.from('store_users').insert([{
-    username, name, password, role, location, disabled: false
-  }]);
-
-  if (error) {
-    alert("Username already exists or error occurred.");
-    return;
-  }
-
-  $("newUsername").value = "";
-  $("newDisplayName").value = "";
-  $("newPassword").value = "";
-  await logAudit("Create Account", `Created ${role} account: ${username} for ${location}`);
-  await loadAccountsListModal();
-}
-
-async function toggleUser(id, currentStatus) {
-  if (!isManager()) return;
-  await db.from('store_users').update({ disabled: !currentStatus }).eq('id', id);
-  await loadAccountsListModal();
-}
-
-async function openEditUserModal(userId) {
-  if (!isManager()) return;
-  const { data, error } = await db.from('store_users').select('*').eq('id', userId).single();
-  if (error || !data) {
-    alert("Could not load user details.");
-    return;
-  }
-
-  $("editUserId").value = data.id;
-  $("editUsernameDisplay").value = data.username;
-  $("editUserFullName").value = data.name;
-  $("editUserRole").value = data.role;
-  $("editUserLocation").value = data.location;
-  $("editUserPassword").value = "";
-
-  $("editUserModal").classList.remove("hidden");
-  $("editUserModal").classList.add("flex");
-}
-
-function closeEditUserModal() {
-  $("editUserModal").classList.add("hidden");
-  $("editUserModal").classList.remove("flex");
-}
-
-async function saveUserEdits(e) {
-  e.preventDefault();
-  if (!isManager()) return;
-  const id = Number($("editUserId").value);
-  const name = $("editUserFullName").value.trim();
-  const role = $("editUserRole").value;
-  const location = $("editUserLocation").value;
-  const newPassword = $("editUserPassword").value.trim();
-
-  const updatePayload = { name, role, location };
-  if (newPassword) {
-    if (newPassword.length < 8) {
-      alert("Password must be at least 8 characters long.");
-      return;
-    }
-    updatePayload.password = newPassword;
-  }
-
-  const { error } = await db.from('store_users').update(updatePayload).eq('id', id);
-  if (error) {
-    alert("Error updating user privileges.");
-    return;
-  }
-
-  await logAudit("Update User", `Updated privileges for user ID ${id}: role=${role}, location=${location}`);
-  closeEditUserModal();
-  await loadAccountsListModal();
-  alert("User account updated successfully!");
-}
-
-async function openAuditModal() {
-  if (!isManager()) return;
-  const { data } = await db.from('audit_logs').select('*').order('created_at', { ascending: false }).limit(100);
-  const container = $("auditList");
-  container.replaceChildren();
-
-  if (data && data.length) {
-    data.forEach(log => {
-      const div = document.createElement("div");
-      div.className = "bg-slate-50 border p-2.5 rounded-lg text-xs space-y-1";
-      div.innerHTML = `
-        <div class="flex justify-between text-slate-500 font-mono text-[10px]">
-          <span>${new Date(log.created_at).toLocaleString()}</span>
-          <span><b>${log.username}</b> (${log.role}) @ ${log.location}</span>
-        </div>
-        <div class="font-bold text-slate-800">${log.action}: <span class="font-normal">${log.details}</span></div>
-      `;
-      container.appendChild(div);
-    });
-  } else {
-    container.innerHTML = `<div class="text-center text-slate-500 py-4">No audit logs recorded yet.</div>`;
-  }
-
-  $("auditModal").classList.remove("hidden");
-  $("auditModal").classList.add("flex");
-}
-
-function closeAuditModal() {
-  $("auditModal").classList.add("hidden");
-  $("auditModal").classList.remove("flex");
-}
-
-function openReorderModal() {
-  const container = $("reorderItemsList");
-  container.replaceChildren();
-  $("reorderLocationLabel").textContent = activeLocation;
-
-  const lowStockItems = currentItems.filter(item => {
-    const closing = Number(item.opening) + Number(item.added) - Number(item.issues);
-    return closing <= 5;
-  });
-
-  let draftText = `REORDER REQUEST - ${activeLocation}\nDate: ${dateKey()}\n----------------------------------------\n`;
-
-  if (lowStockItems.length) {
-    lowStockItems.forEach(item => {
-      const closing = Number(item.opening) + Number(item.added) - Number(item.issues);
-      const div = document.createElement("div");
-      div.className = "flex justify-between bg-slate-50 p-2 rounded border";
-      div.innerHTML = `<span><b>${item.description}</b> (${item.item_code})</span> <span class="text-rose-600 font-bold">Stock: ${closing} ${item.unit}</span>`;
-      container.appendChild(div);
-
-      draftText += `- ${item.description} (${item.item_code}): Current Stock ${closing} ${item.unit}\n`;
-    });
-  } else {
-    container.innerHTML = `<div class="text-slate-500 text-center py-2">No items are currently at or below reorder threshold (<= 5 units).</div>`;
-    draftText += `All items are adequately stocked.\n`;
-  }
-
-  $("reorderDraftText").value = draftText;
-  $("reorderModal").classList.remove("hidden");
-  $("reorderModal").classList.add("flex");
-}
-
-function closeReorderModal() {
-  $("reorderModal").classList.add("hidden");
-  $("reorderModal").classList.remove("flex");
-}
-
-function copyReorderText() {
-  const textarea = $("reorderDraftText");
-  textarea.select();
-  navigator.clipboard.writeText(textarea.value);
-  alert("Reorder draft copied to clipboard!");
 }
 
 function exportCSV() {
