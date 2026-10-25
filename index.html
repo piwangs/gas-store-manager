@@ -5,28 +5,24 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>GAS GENERAL STORE MANAGER - Cloud Real-Time System</title>
 
-  <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
-
-  <!-- FontAwesome Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
-  <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-  <!-- Supabase Cloud SDK -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-  <!-- SheetJS -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
   <script>
-    tailwind.config = { 
-      theme: { 
-        extend: { 
-          colors: { 
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
             brand: {
-              50:'#eff6ff', 100:'#dbeafe', 500:'#3b82f6', 600:'#2563eb', 700:'#1d4ed8', 900:'#1e3a8a'
+              50: '#eff6ff',
+              100: '#dbeafe',
+              500: '#3b82f6',
+              600: '#2563eb',
+              700: '#1d4ed8',
+              900: '#1e3a8a'
             }
           }
         }
@@ -37,17 +33,18 @@
   <style>
     @media print {
       #loginModal, header button, #managerLocationBox, #filtersPanel,
-      #itemModal, #userManagerModal, #editUserModal, #auditModal, #reorderModal, #changePasswordModal, .no-print { display:none !important; }
-      body { background:white !important; }
-      main { max-width:none !important; padding:0 !important; }
-      .shadow-sm { box-shadow:none !important; }
+      #itemModal, #userManagerModal, #editUserModal, #auditModal, #reorderModal, #changePasswordModal, .no-print {
+        display: none !important;
+      }
+      body { background: white !important; }
+      main { max-width: none !important; padding: 0 !important; }
+      .shadow-sm { box-shadow: none !important; }
     }
   </style>
 </head>
 
 <body class="bg-slate-100 text-slate-800 font-sans min-h-screen flex flex-col">
 
-  <!-- Hidden Excel File Input -->
   <input type="file" id="excelFileInput" accept=".xlsx, .xls, .csv" class="hidden">
 
   <!-- Login Modal -->
@@ -80,7 +77,6 @@
     </div>
   </div>
 
-  <!-- Header -->
   <header class="bg-slate-900 text-white shadow-lg sticky top-0 z-40">
     <div class="max-w-7xl mx-auto px-4 py-3 flex flex-col sm:flex-row justify-between items-center gap-4">
       <div class="flex items-center gap-3">
@@ -110,9 +106,7 @@
     </div>
   </header>
 
-  <!-- Main Content -->
   <main class="flex-grow max-w-7xl w-full mx-auto px-4 py-6 space-y-6">
-    <!-- Date and Location Selector -->
     <section class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col md:flex-row justify-between items-center gap-4">
       <div class="flex items-center gap-2 flex-wrap">
         <button id="prevDateBtn" class="bg-slate-100 hover:bg-slate-200 px-3 py-2 rounded-lg text-sm font-semibold transition"><i class="fa-solid fa-chevron-left"></i></button>
@@ -130,7 +124,6 @@
       </div>
     </section>
 
-    <!-- KPI Cards -->
     <section class="grid grid-cols-2 md:grid-cols-5 gap-4">
       <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200"><div class="flex justify-between items-center"><span class="text-xs font-semibold text-slate-400 uppercase">Items Tracked</span><i class="fa-solid fa-box text-brand-600"></i></div><div id="statTotalItems" class="mt-3 text-2xl font-extrabold text-slate-800">0</div></div>
       <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200"><div class="flex justify-between items-center"><span class="text-xs font-semibold text-slate-400 uppercase">Daily Issues</span><i class="fa-solid fa-triangle-exclamation text-amber-500"></i></div><div id="statTotalIssues" class="mt-3 text-2xl font-extrabold text-slate-800">0</div></div>
@@ -139,7 +132,6 @@
       <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 col-span-2 md:col-span-1"><div class="flex justify-between items-center"><span class="text-xs font-semibold text-slate-400 uppercase">Low Stock</span><i class="fa-solid fa-bell text-rose-500"></i></div><div id="statLowStock" class="mt-3 text-2xl font-extrabold text-slate-800">0</div></div>
     </section>
 
-    <!-- Filters -->
     <section id="filtersPanel" class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col md:flex-row justify-between items-center gap-3">
       <div class="flex flex-wrap gap-2" id="categoryFilter">
         <button data-category="All" class="cat-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-brand-600 text-white">All</button>
@@ -152,7 +144,6 @@
       <input id="searchInput" type="search" placeholder="Search item..." class="w-full md:w-64 bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none">
     </section>
 
-    <!-- Inventory Data Table -->
     <section class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
       <div class="overflow-x-auto">
         <table class="w-full text-left border-collapse" id="inventoryTable">
@@ -179,14 +170,12 @@
       <div id="emptyState" class="hidden p-8 text-center text-sm text-slate-500">No inventory items found for this date/location in the cloud.</div>
     </section>
 
-    <!-- Chart -->
     <section class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
       <h3 class="text-sm font-bold text-slate-800 mb-4 flex items-center"><i class="fa-solid fa-chart-bar text-brand-600 mr-2"></i>Daily Issues Breakdown by Category</h3>
       <div class="h-64"><canvas id="categoryChart"></canvas></div>
     </section>
   </main>
 
-  <!-- Change Password Modal -->
   <div id="changePasswordModal" class="fixed inset-0 bg-slate-900/70 hidden items-center justify-center z-50 p-4">
     <div class="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl space-y-4">
       <div class="flex justify-between items-center border-b pb-3">
@@ -215,7 +204,6 @@
     </div>
   </div>
 
-  <!-- Add/Edit Inventory Item Modal -->
   <div id="itemModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
     <div class="bg-white rounded-2xl shadow-xl max-w-lg w-full overflow-hidden border border-slate-200">
       <div class="bg-slate-900 text-white px-6 py-4 flex justify-between items-center">
@@ -259,7 +247,6 @@
     </div>
   </div>
 
-  <!-- Reorder Modal -->
   <div id="reorderModal" class="fixed inset-0 bg-slate-900/70 hidden items-center justify-center z-50 p-4">
     <div class="bg-white rounded-xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto space-y-4">
       <div class="flex justify-between items-center border-b pb-3">
@@ -279,7 +266,6 @@
     </div>
   </div>
 
-  <!-- Audit Log Modal -->
   <div id="auditModal" class="fixed inset-0 bg-slate-900/70 hidden items-center justify-center z-50 p-4">
     <div class="bg-white rounded-xl p-6 w-full max-w-3xl max-h-[90vh] overflow-y-auto space-y-4">
       <div class="flex justify-between items-center border-b pb-3">
@@ -293,10 +279,10 @@
     </div>
   </div>
 
-  <!-- Store Locations & Accounts Modal -->
   <div id="userManagerModal" class="fixed inset-0 bg-slate-900/70 hidden items-center justify-center z-50 p-4">
     <div class="bg-white rounded-xl p-6 w-full max-w-2xl max-h-[92vh] overflow-y-auto space-y-4">
       <div class="flex justify-between items-center"><h2 class="font-bold text-lg text-slate-800">Manage Store Locations & Accounts</h2><button id="closeUsersX" type="button"><i class="fa-solid fa-xmark"></i></button></div>
+
       <div class="space-y-2">
         <h3 class="font-bold text-sm text-slate-800">Store Locations</h3>
         <form id="locationForm" class="flex flex-col sm:flex-row gap-2">
@@ -329,7 +315,6 @@
     </div>
   </div>
 
-  <!-- Edit User Modal -->
   <div id="editUserModal" class="fixed inset-0 bg-slate-900/80 hidden items-center justify-center z-50 p-4">
     <div class="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl space-y-4">
       <div class="flex justify-between items-center border-b pb-3">
@@ -371,1115 +356,1168 @@
     </div>
   </div>
 
-<script>
-"use strict";
+  <script>
+    "use strict";
 
-const SUPABASE_URL = "https://pxboxopyrcprdmpjucia.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB4Ym94b3B5cmNwcmRtcGp1Y2lhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI3MzYyNDEsImV4cCI6MjEwODMxMjI0MX0.rw8NCKG1JMPDbQyiIpjRYVSpNHaXn6R_hp_aJSocGpc";
-const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const SUPABASE_URL = "https://pxboxopyrcprdmpjucia.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB4Ym94b3B5cmNwcmRtcGp1Y2lhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI3MzYyNDEsImV4cCI6MjEwODMxMjI0MX0.rw8NCKG1JMPDbQyiIpjRYVSpNHaXn6R_hp_aJSocGpc";
 
-let currentUser = null;
-let activeLocation = "Juba Depot";
-let currentActiveCategory = "All";
-let chartInstance = null;
-let saveStatusTimer = null;
-let currentItems = [];
+    const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-const $ = id => document.getElementById(id);
-const isManager = () => !!currentUser && currentUser.role === "Manager";
+    let currentUser = null;
+    let activeLocation = "Juba Depot";
+    let currentActiveCategory = "All";
+    let chartInstance = null;
+    let saveStatusTimer = null;
+    let currentItems = [];
 
-function localDateString(date = new Date()) {
-  const y = date.getFullYear();
-  const m = String(date.getMonth()+1).padStart(2,"0");
-  const d = String(date.getDate()).padStart(2,"0");
-  return `${y}-${m}-${d}`;
-}
+    const $ = id => document.getElementById(id);
+    const isManager = () => !!currentUser && currentUser.role === "Manager";
 
-function dateKey() { return $("selectedDate").value || localDateString(); }
-
-async function logAudit(action, details) {
-  if (!currentUser) return;
-  try {
-    await db.from("audit_logs").insert([{
-      username: currentUser.username,
-      role: currentUser.role,
-      location: activeLocation,
-      action: action,
-      details: details
-    }]);
-  } catch (err) {
-    console.warn("Audit log failed:", err);
-  }
-}
-
-function bindEvents() {
-  $("loginForm").addEventListener("submit", handleLogin);
-  $("logoutBtn").addEventListener("click", async () => {
-    await supabase.auth.signOut();
-    location.reload();
-  });
-  $("userPasswordBtn").addEventListener("click", openChangePasswordModal);
-  $("manageUsersBtn").addEventListener("click", openUserManager);
-  $("auditBtn").addEventListener("click", openAuditModal);
-  $("reorderBtn").addEventListener("click", openReorderModal);
-  $("exportBtn").addEventListener("click", exportCSV);
-  $("downloadTemplateBtn").addEventListener("click", downloadMasterTemplate);
-  $("uploadExcelBtn").addEventListener("click", () => $("excelFileInput").click());
-  $("excelFileInput").addEventListener("change", handleExcelUpload);
-  $("printBtn").addEventListener("click", () => window.print());
-  $("newItemBtn").addEventListener("click", openNewItemModal);
-  $("selectedDate").addEventListener("change", () => loadCloudData(activeLocation));
-  $("prevDateBtn").addEventListener("click", () => changeDate(-1));
-  $("nextDateBtn").addEventListener("click", () => changeDate(1));
-  $("todayBtn").addEventListener("click", setToday);
-  $("searchInput").addEventListener("input", renderTable);
-  $("categoryFilter").addEventListener("click", e => {
-    const button = e.target.closest("button[data-category]");
-    if (button) filterCategory(button.dataset.category);
-  });
-  $("itemForm").addEventListener("submit", saveItem);
-  $("deleteItemBtn").addEventListener("click", deleteCurrentItem);
-  $("closeItemX").addEventListener("click", closeItemModal);
-  $("cancelItemBtn").addEventListener("click", closeItemModal);
-  $("locationForm").addEventListener("submit", createLocation);
-  $("userForm").addEventListener("submit", createAccount);
-  $("closeUsersX").addEventListener("click", closeUserManager);
-  $("closeUsersBtn").addEventListener("click", closeUserManager);
-  $("closeAuditX").addEventListener("click", closeAuditModal);
-  $("closeAuditBtn").addEventListener("click", closeAuditModal);
-  $("closeReorderX").addEventListener("click", closeReorderModal);
-  $("closeReorderBtn").addEventListener("click", closeReorderModal);
-  $("copyReorderBtn").addEventListener("click", copyReorderText);
-  $("editUserForm").addEventListener("submit", saveUserEdits);
-  $("closeEditUserX").addEventListener("click", closeEditUserModal);
-  $("cancelEditUserBtn").addEventListener("click", closeEditUserModal);
-  $("changePasswordForm").addEventListener("submit", changeMyPassword);
-  $("closeChangePassX").addEventListener("click", closeChangePasswordModal);
-  $("cancelChangePassBtn").addEventListener("click", closeChangePasswordModal);
-
-  $("locationSelector").addEventListener("change", () => {
-    activeLocation = $("locationSelector").value;
-    loadCloudData(activeLocation);
-  });
-}
-
-window.addEventListener("DOMContentLoaded", () => {
-  $("selectedDate").value = localDateString();
-  updateDayLabel();
-  bindEvents();
-});
-
-async function handleLogin(e) {
-  e.preventDefault();
-
-  const username = $("loginUser").value.trim();
-  const password = $("loginPass").value.trim();
-
-  if (!username || !password) {
-    $("loginError").classList.remove("hidden");
-    return;
-  }
-
-  const { data: appUser, error: userError } = await db
-    .from("store_users")
-    .select("*")
-    .eq("username", username)
-    .eq("disabled", false)
-    .maybeSingle();
-
-  if (userError || !appUser || !appUser.email) {
-    $("loginError").classList.remove("hidden");
-    return;
-  }
-
-  const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-    email: appUser.email,
-    password
-  });
-
-  if (authError || !authData?.user) {
-    $("loginError").classList.remove("hidden");
-    return;
-  }
-
-  currentUser = appUser;
-  $("loginModal").classList.add("hidden");
-  $("displayUserName").textContent = `${currentUser.name} (${currentUser.role})`;
-
-  if (currentUser.role === "Manager") {
-    activeLocation = "Juba Depot";
-    $("managerLocationBox").classList.remove("hidden");
-    $("managerLocationBox").classList.add("flex");
-    $("manageUsersBtn").classList.remove("hidden");
-    $("auditBtn").classList.remove("hidden");
-    $("newItemBtn").classList.remove("hidden");
-    $("downloadTemplateBtn").classList.remove("hidden");
-    $("uploadExcelBtn").classList.remove("hidden");
-    await loadLocations();
-  } else {
-    activeLocation = currentUser.location;
-    $("managerLocationBox").classList.add("hidden");
-    $("manageUsersBtn").classList.add("hidden");
-    $("auditBtn").classList.add("hidden");
-    $("newItemBtn").classList.add("hidden");
-    $("downloadTemplateBtn").classList.add("hidden");
-    $("uploadExcelBtn").classList.add("hidden");
-    await loadLocations();
-  }
-
-  $("locationBadge").textContent = activeLocation;
-  await logAudit("Login", `Signed in at ${activeLocation}`);
-  await loadCloudData(activeLocation);
-}
-
-async function loadLocations() {
-  const { data } = await db.from("locations").select("name").order("name");
-  if (!data || !data.length) return;
-
-  const select = $("locationSelector");
-  select.replaceChildren();
-  data.forEach(l => {
-    const opt = document.createElement("option");
-    opt.value = l.name; opt.textContent = l.name; select.appendChild(opt);
-  });
-  select.value = activeLocation;
-
-  const itemLocationSelect = $("itemLocation");
-  if (itemLocationSelect) {
-    itemLocationSelect.replaceChildren();
-    data.forEach(l => {
-      const opt = document.createElement("option");
-      opt.value = l.name; opt.textContent = l.name; itemLocationSelect.appendChild(opt);
-    });
-    itemLocationSelect.value = activeLocation;
-  }
-
-  const userLocSelect = $("newUserLocation");
-  if (userLocSelect) {
-    userLocSelect.replaceChildren();
-    data.forEach(l => {
-      const opt = document.createElement("option");
-      opt.value = l.name; opt.textContent = l.name; userLocSelect.appendChild(opt);
-    });
-    const optAll = document.createElement("option");
-    optAll.value = "All Locations"; optAll.textContent = "All Locations";
-    userLocSelect.appendChild(optAll);
-  }
-
-  const editUserLocSelect = $("editUserLocation");
-  if (editUserLocSelect) {
-    editUserLocSelect.replaceChildren();
-    data.forEach(l => {
-      const opt = document.createElement("option");
-      opt.value = l.name; opt.textContent = l.name; editUserLocSelect.appendChild(opt);
-    });
-    const optAll = document.createElement("option");
-    optAll.value = "All Locations"; optAll.textContent = "All Locations";
-    editUserLocSelect.appendChild(optAll);
-  }
-}
-
-async function loadCloudData(selectedLocation = activeLocation) {
-  if (!currentUser) return;
-
-  activeLocation = selectedLocation;
-  if ($("locationSelector")) $("locationSelector").value = activeLocation;
-
-  const date = dateKey();
-  updateDayLabel();
-
-  const { data: masterItems } = await db.from("master_items").select("*").order("item_code");
-  if (!masterItems || masterItems.length === 0) {
-    currentItems = [];
-    renderTable();
-    updateKPIs();
-    renderChart();
-    return;
-  }
-
-  let { data: dailyEntries } = await db.from("inventory_entries")
-    .select("*")
-    .eq("location", activeLocation)
-    .eq("entry_date", date);
-
-  if (!dailyEntries || dailyEntries.length === 0) {
-    const prevDate = new Date(date + "T12:00:00");
-    prevDate.setDate(prevDate.getDate() - 1);
-    const prevDateStr = localDateString(prevDate);
-
-    let { data: prevData } = await db.from("inventory_entries")
-      .select("*")
-      .eq("location", activeLocation)
-      .eq("entry_date", prevDateStr);
-
-    const newEntries = masterItems.map(m => {
-      let openingVal = 0;
-      if (prevData && prevData.length > 0) {
-        const prev = prevData.find(p => p.item_code === m.item_code);
-        if (prev) openingVal = Number(prev.opening) + Number(prev.added) - Number(prev.issues);
-      }
-      return {
-        location: activeLocation,
-        entry_date: date,
-        item_code: m.item_code,
-        description: m.description,
-        category: m.category,
-        unit: m.unit,
-        opening: openingVal,
-        added: 0,
-        issues: 0,
-        cost: Number(m.cost) || 0,
-        price: Number(m.price) || 0,
-        comments: ""
-      };
-    });
-
-    await db.from("inventory_entries").insert(newEntries);
-
-    const { data: refetched } = await db.from("inventory_entries")
-      .select("*")
-      .eq("location", activeLocation)
-      .eq("entry_date", date);
-
-    dailyEntries = refetched || [];
-  } else {
-    const existingCodes = new Set(dailyEntries.map(e => e.item_code));
-    const missingMaster = masterItems.filter(m => !existingCodes.has(m.item_code));
-    if (missingMaster.length > 0) {
-      const extraEntries = missingMaster.map(m => ({
-        location: activeLocation,
-        entry_date: date,
-        item_code: m.item_code,
-        description: m.description,
-        category: m.category,
-        unit: m.unit,
-        opening: 0,
-        added: 0,
-        issues: 0,
-        cost: Number(m.cost) || 0,
-        price: Number(m.price) || 0,
-        comments: ""
-      }));
-      await db.from("inventory_entries").insert(extraEntries);
-      const { data: refetched2 } = await db.from("inventory_entries")
-        .select("*")
-        .eq("location", activeLocation)
-        .eq("entry_date", date);
-      dailyEntries = refetched2 || dailyEntries;
+    function localDateString(date = new Date()) {
+      const y = date.getFullYear();
+      const m = String(date.getMonth() + 1).padStart(2, "0");
+      const d = String(date.getDate()).padStart(2, "0");
+      return `${y}-${m}-${d}`;
     }
-  }
 
-  const masterMap = new Map(masterItems.map(m => [m.item_code, m]));
+    function dateKey() {
+      return $("selectedDate").value || localDateString();
+    }
 
-  currentItems = (dailyEntries || []).map(entry => {
-    const master = masterMap.get(entry.item_code) || {};
-    return {
-      id: entry.id,
-      location: entry.location,
-      item_code: entry.item_code,
-      description: entry.description || master.description || "",
-      category: entry.category || master.category || "Dry Food Items",
-      unit: entry.unit || master.unit || "Pcs",
-      opening: Number(entry.opening) || 0,
-      added: Number(entry.added) || 0,
-      issues: Number(entry.issues) || 0,
-      cost: Number(entry.cost) || Number(master.cost) || 0,
-      price: Number(entry.price) || Number(master.price) || 0,
-      comments: entry.comments || ""
-    };
-  }).sort((a, b) => a.item_code.localeCompare(b.item_code));
+    function updateDayLabel() {
+      const d = new Date(dateKey() + "T12:00:00");
+      $("dayLabel").textContent = d.toLocaleDateString("en-US", {
+        weekday: "short", month: "short", day: "numeric", year: "numeric"
+      });
+    }
 
-  renderTable();
-  updateKPIs();
-  renderChart();
-}
+    function showSaveStatus() {
+      const status = $("saveStatus");
+      status.classList.remove("opacity-0");
+      clearTimeout(saveStatusTimer);
+      saveStatusTimer = setTimeout(() => status.classList.add("opacity-0"), 1200);
+    }
 
-function renderTable() {
-  const tbody = $("tableBody");
-  tbody.replaceChildren();
+    async function logAudit(action, details) {
+      if (!currentUser) return;
+      try {
+        await db.from("audit_logs").insert([{
+          username: currentUser.username,
+          role: currentUser.role,
+          location: activeLocation,
+          action,
+          details
+        }]);
+      } catch (err) {
+        console.warn("Audit log failed:", err);
+      }
+    }
 
-  const search = $("searchInput").value.toLowerCase();
-  const filtered = currentItems.filter(item => {
-    const matchesCat = currentActiveCategory === "All" || item.category === currentActiveCategory;
-    const matchesSearch = item.description.toLowerCase().includes(search) || item.item_code.toLowerCase().includes(search);
-    return matchesCat && matchesSearch;
-  });
+    function bindEvents() {
+      $("loginForm").addEventListener("submit", handleLogin);
+      $("logoutBtn").addEventListener("click", async () => {
+        await supabase.auth.signOut();
+        location.reload();
+      });
+      $("userPasswordBtn").addEventListener("click", openChangePasswordModal);
+      $("manageUsersBtn").addEventListener("click", openUserManager);
+      $("auditBtn").addEventListener("click", openAuditModal);
+      $("reorderBtn").addEventListener("click", openReorderModal);
+      $("exportBtn").addEventListener("click", exportCSV);
+      $("downloadTemplateBtn").addEventListener("click", downloadMasterTemplate);
+      $("uploadExcelBtn").addEventListener("click", () => $("excelFileInput").click());
+      $("excelFileInput").addEventListener("change", handleExcelUpload);
+      $("printBtn").addEventListener("click", () => window.print());
+      $("newItemBtn").addEventListener("click", openNewItemModal);
 
-  if (!filtered.length) {
-    $("emptyState").classList.remove("hidden");
-    return;
-  }
-  $("emptyState").classList.add("hidden");
+      $("selectedDate").addEventListener("change", () => loadCloudData(activeLocation));
+      $("prevDateBtn").addEventListener("click", () => changeDate(-1));
+      $("nextDateBtn").addEventListener("click", () => changeDate(1));
+      $("todayBtn").addEventListener("click", setToday);
 
-  filtered.forEach(item => {
-    const closing = Number(item.opening) + Number(item.added) - Number(item.issues);
-    const rev = Number(item.issues) * Number(item.price);
+      $("searchInput").addEventListener("input", renderTable);
+      $("categoryFilter").addEventListener("click", e => {
+        const button = e.target.closest("button[data-category]");
+        if (button) filterCategory(button.dataset.category);
+      });
 
-    const tr = document.createElement("tr");
-    tr.className = "hover:bg-slate-50";
-    tr.innerHTML = `
-      <td class="p-3 font-mono font-semibold text-slate-500">${item.item_code}</td>
-      <td class="p-3 font-bold text-slate-800">${item.description}</td>
-      <td class="p-3">${item.category}</td>
-      <td class="p-3 text-center">${item.unit}</td>
-      <td class="p-3 text-center font-semibold">${item.opening}</td>
-      <td class="p-3 text-center text-emerald-600">+${item.added}</td>
-      <td class="p-3 text-center text-amber-600">-${item.issues}</td>
-      <td class="p-3 text-center font-extrabold ${closing <= 5 ? 'text-rose-600' : ''}">${closing}</td>
-      <td class="p-3 text-right font-mono">$${Number(item.cost).toFixed(2)}</td>
-      <td class="p-3 text-right font-mono">$${Number(item.price).toFixed(2)}</td>
-      <td class="p-3 text-right font-mono text-emerald-600">$${rev.toFixed(2)}</td>
-      <td class="p-3 text-slate-500">${item.comments || '--'}</td>
-      <td class="p-3 text-center">
-        <button onclick="openEditItemModal(${item.id})" class="bg-amber-100 hover:bg-amber-200 text-amber-800 px-2.5 py-1 rounded text-[10px] font-bold">
-          <i class="fa-solid fa-pen mr-1"></i>${isManager() ? "Edit" : "Log"}
-        </button>
-      </td>
-    `;
-    tbody.appendChild(tr);
-  });
-}
+      $("locationSelector").addEventListener("change", () => {
+        activeLocation = $("locationSelector").value;
+        loadCloudData(activeLocation);
+      });
 
-function updateKPIs() {
-  let totalIssues = 0;
-  let totalRevenue = 0;
-  let grossProfit = 0;
-  let lowStock = 0;
+      $("itemForm").addEventListener("submit", saveItem);
+      $("deleteItemBtn").addEventListener("click", deleteCurrentItem);
+      $("closeItemX").addEventListener("click", closeItemModal);
+      $("cancelItemBtn").addEventListener("click", closeItemModal);
 
-  currentItems.forEach(item => {
-    const issues = Number(item.issues) || 0;
-    const closing = Number(item.opening) + Number(item.added) - issues;
-    const rev = issues * Number(item.price);
-    const costTotal = issues * Number(item.cost);
+      $("locationForm").addEventListener("submit", createLocation);
+      $("userForm").addEventListener("submit", createAccount);
+      $("closeUsersX").addEventListener("click", closeUserManager);
+      $("closeUsersBtn").addEventListener("click", closeUserManager);
 
-    totalIssues += issues;
-    totalRevenue += rev;
-    grossProfit += (rev - costTotal);
+      $("closeAuditX").addEventListener("click", closeAuditModal);
+      $("closeAuditBtn").addEventListener("click", closeAuditModal);
 
-    if (closing <= 5) lowStock++;
-  });
+      $("closeReorderX").addEventListener("click", closeReorderModal);
+      $("closeReorderBtn").addEventListener("click", closeReorderModal);
+      $("copyReorderBtn").addEventListener("click", copyReorderText);
 
-  $("statTotalItems").textContent = currentItems.length;
-  $("statTotalIssues").textContent = totalIssues;
-  $("statDailyRevenue").textContent = `$${totalRevenue.toFixed(2)}`;
-  $("statGrossProfit").textContent = `$${grossProfit.toFixed(2)}`;
-  $("statLowStock").textContent = lowStock;
-}
+      $("editUserForm").addEventListener("submit", saveUserEdits);
+      $("closeEditUserX").addEventListener("click", closeEditUserModal);
+      $("cancelEditUserBtn").addEventListener("click", closeEditUserModal);
 
-function renderChart() {
-  const canvas = $("categoryChart");
-  if (!canvas) return;
+      $("changePasswordForm").addEventListener("submit", changeMyPassword);
+      $("closeChangePassX").addEventListener("click", closeChangePasswordModal);
+      $("cancelChangePassBtn").addEventListener("click", closeChangePasswordModal);
+    }
 
-  const categoryMap = {};
-  currentItems.forEach(item => {
-    const issues = Number(item.issues) || 0;
-    if (issues <= 0) return;
-    categoryMap[item.category] = (categoryMap[item.category] || 0) + issues;
-  });
+    async function handleLogin(e) {
+      e.preventDefault();
 
-  const labels = Object.keys(categoryMap);
-  const data = Object.values(categoryMap);
+      const username = $("loginUser").value.trim();
+      const password = $("loginPass").value.trim();
 
-  if (chartInstance) chartInstance.destroy();
-
-  if (!labels.length) {
-    chartInstance = new Chart(canvas.getContext("2d"), {
-      type: "bar",
-      data: {
-        labels: ["No issues"],
-        datasets: [{ label: "Issues", data: [0], backgroundColor: ["#e2e8f0"] }]
-      },
-      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
-    });
-    return;
-  }
-
-  chartInstance = new Chart(canvas.getContext("2d"), {
-    type: "bar",
-    data: {
-      labels,
-      datasets: [{ label: "Issues", data, backgroundColor: ["#3b82f6", "#22c55e", "#f59e0b", "#ef4444", "#8b5cf6", "#14b8a6"] }]
-    },
-    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
-  });
-}
-
-function filterCategory(category) {
-  currentActiveCategory = category;
-  const buttons = document.querySelectorAll(".cat-btn");
-  buttons.forEach(btn => {
-    const active = btn.dataset.category === category;
-    btn.classList.toggle("bg-brand-600", active);
-    btn.classList.toggle("text-white", active);
-    btn.classList.toggle("bg-slate-100", !active);
-    btn.classList.toggle("text-slate-700", !active);
-  });
-  renderTable();
-}
-
-function setToday() {
-  $("selectedDate").value = localDateString();
-  loadCloudData(activeLocation);
-}
-
-function changeDate(offset) {
-  const current = new Date(dateKey() + "T12:00:00");
-  current.setDate(current.getDate() + offset);
-  $("selectedDate").value = localDateString(current);
-  loadCloudData(activeLocation);
-}
-
-function downloadMasterTemplate() {
-  const masterData = currentItems.map(i => ({
-    "Item Code": i.item_code,
-    "Item Description": i.description,
-    "Category": i.category,
-    "Unit": i.unit,
-    "Cost Price": i.cost,
-    "Selling Price": i.price
-  }));
-
-  const worksheet = XLSX.utils.json_to_sheet(masterData);
-  const workbook = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook, worksheet, "Master Catalog");
-  worksheet["!cols"] = [{ wch: 12 }, { wch: 28 }, { wch: 20 }, { wch: 10 }, { wch: 12 }, { wch: 14 }];
-  XLSX.writeFile(workbook, "GAS_Master_Inventory_Catalog.xlsx");
-}
-
-async function handleExcelUpload(e) {
-  if (!isManager()) return;
-  const file = e.target.files[0];
-  if (!file) return;
-
-  const reader = new FileReader();
-  reader.onload = async (evt) => {
-    try {
-      const data = new Uint8Array(evt.target.result);
-      const workbook = XLSX.read(data, { type:'array' });
-      const firstSheetName = workbook.SheetNames[0];
-      const worksheet = workbook.Sheets[firstSheetName];
-      const rows = XLSX.utils.sheet_to_json(worksheet);
-
-      if (!rows || rows.length === 0) {
-        alert("The uploaded Excel file contains no data.");
+      if (!username || !password) {
+        $("loginError").classList.remove("hidden");
         return;
       }
 
-      for (const row of rows) {
-        const itemCode = String(row["Item Code"] || row["ItemCode"] || row["ID"] || "").trim();
-        const description = String(row["Item Description"] || row["Description"] || "").trim();
-        const category = String(row["Category"] || "Dry Food Items").trim();
-        const unit = String(row["Unit"] || "Pcs").trim();
-        const cost = Number(row["Cost Price"] || row["Cost"] || 0);
-        const price = Number(row["Selling Price"] || row["Price"] || 0);
+      const { data: appUser, error: userError } = await db
+        .from("store_users")
+        .select("*")
+        .eq("username", username)
+        .eq("disabled", false)
+        .maybeSingle();
 
-        if (!itemCode || !description) continue;
+      if (userError || !appUser || !appUser.email) {
+        $("loginError").textContent = "User not found or email not linked.";
+        $("loginError").classList.remove("hidden");
+        return;
+      }
 
-        await db.from("master_items").upsert([{
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email: appUser.email,
+        password
+      });
+
+      if (authError || !authData?.user) {
+        $("loginError").textContent = "Invalid username or password.";
+        $("loginError").classList.remove("hidden");
+        return;
+      }
+
+      currentUser = appUser;
+      $("loginModal").classList.add("hidden");
+      $("displayUserName").textContent = `${currentUser.name} (${currentUser.role})`;
+
+      if (currentUser.role === "Manager") {
+        activeLocation = "Juba Depot";
+        $("managerLocationBox").classList.remove("hidden");
+        $("managerLocationBox").classList.add("flex");
+        $("manageUsersBtn").classList.remove("hidden");
+        $("auditBtn").classList.remove("hidden");
+        $("newItemBtn").classList.remove("hidden");
+        $("downloadTemplateBtn").classList.remove("hidden");
+        $("uploadExcelBtn").classList.remove("hidden");
+      } else {
+        activeLocation = currentUser.location;
+        $("managerLocationBox").classList.add("hidden");
+        $("manageUsersBtn").classList.add("hidden");
+        $("auditBtn").classList.add("hidden");
+        $("newItemBtn").classList.add("hidden");
+        $("downloadTemplateBtn").classList.add("hidden");
+        $("uploadExcelBtn").classList.add("hidden");
+      }
+
+      $("locationBadge").textContent = activeLocation;
+      await logAudit("Login", `Signed in at ${activeLocation}`);
+      await loadLocations();
+      await loadCloudData(activeLocation);
+    }
+
+    async function loadLocations() {
+      const { data } = await db.from("locations").select("name").order("name");
+      if (!data || !data.length) return;
+
+      const select = $("locationSelector");
+      select.replaceChildren();
+      data.forEach(l => {
+        const opt = document.createElement("option");
+        opt.value = l.name;
+        opt.textContent = l.name;
+        select.appendChild(opt);
+      });
+      select.value = activeLocation;
+
+      const itemLocationSelect = $("itemLocation");
+      if (itemLocationSelect) {
+        itemLocationSelect.replaceChildren();
+        data.forEach(l => {
+          const opt = document.createElement("option");
+          opt.value = l.name;
+          opt.textContent = l.name;
+          itemLocationSelect.appendChild(opt);
+        });
+        itemLocationSelect.value = activeLocation;
+      }
+
+      const userLocSelect = $("newUserLocation");
+      if (userLocSelect) {
+        userLocSelect.replaceChildren();
+        data.forEach(l => {
+          const opt = document.createElement("option");
+          opt.value = l.name;
+          opt.textContent = l.name;
+          userLocSelect.appendChild(opt);
+        });
+        const optAll = document.createElement("option");
+        optAll.value = "All Locations";
+        optAll.textContent = "All Locations";
+        userLocSelect.appendChild(optAll);
+      }
+
+      const editUserLocSelect = $("editUserLocation");
+      if (editUserLocSelect) {
+        editUserLocSelect.replaceChildren();
+        data.forEach(l => {
+          const opt = document.createElement("option");
+          opt.value = l.name;
+          opt.textContent = l.name;
+          editUserLocSelect.appendChild(opt);
+        });
+        const optAll = document.createElement("option");
+        optAll.value = "All Locations";
+        optAll.textContent = "All Locations";
+        editUserLocSelect.appendChild(optAll);
+      }
+    }
+
+    async function loadCloudData(selectedLocation = activeLocation) {
+      if (!currentUser) return;
+
+      activeLocation = selectedLocation;
+      if ($("locationSelector")) $("locationSelector").value = activeLocation;
+
+      const date = dateKey();
+      updateDayLabel();
+
+      const { data: masterItems } = await db.from("master_items").select("*").order("item_code");
+      if (!masterItems || masterItems.length === 0) {
+        currentItems = [];
+        renderTable();
+        updateKPIs();
+        renderChart();
+        return;
+      }
+
+      let { data: dailyEntries } = await db.from("inventory_entries").select("*").eq("location", activeLocation).eq("entry_date", date);
+
+      if (!dailyEntries || dailyEntries.length === 0) {
+        const prevDate = new Date(date + "T12:00:00");
+        prevDate.setDate(prevDate.getDate() - 1);
+        const prevDateStr = localDateString(prevDate);
+
+        let { data: prevData } = await db.from("inventory_entries").select("*").eq("location", activeLocation).eq("entry_date", prevDateStr);
+
+        const newEntries = masterItems.map(m => {
+          let openingVal = 0;
+          if (prevData && prevData.length > 0) {
+            const prev = prevData.find(p => p.item_code === m.item_code);
+            if (prev) openingVal = Number(prev.opening) + Number(prev.added) - Number(prev.issues);
+          }
+          return {
+            location: activeLocation,
+            entry_date: date,
+            item_code: m.item_code,
+            description: m.description,
+            category: m.category,
+            unit: m.unit,
+            opening: openingVal,
+            added: 0,
+            issues: 0,
+            cost: Number(m.cost) || 0,
+            price: Number(m.price) || 0,
+            comments: ""
+          };
+        });
+
+        await db.from("inventory_entries").insert(newEntries);
+
+        const { data: refetched } = await db.from("inventory_entries").select("*").eq("location", activeLocation).eq("entry_date", date);
+        dailyEntries = refetched || [];
+      } else {
+        const existingCodes = new Set(dailyEntries.map(e => e.item_code));
+        const missingMaster = masterItems.filter(m => !existingCodes.has(m.item_code));
+        if (missingMaster.length > 0) {
+          const extraEntries = missingMaster.map(m => ({
+            location: activeLocation,
+            entry_date: date,
+            item_code: m.item_code,
+            description: m.description,
+            category: m.category,
+            unit: m.unit,
+            opening: 0,
+            added: 0,
+            issues: 0,
+            cost: Number(m.cost) || 0,
+            price: Number(m.price) || 0,
+            comments: ""
+          }));
+          await db.from("inventory_entries").insert(extraEntries);
+          const { data: refetched2 } = await db.from("inventory_entries").select("*").eq("location", activeLocation).eq("entry_date", date);
+          dailyEntries = refetched2 || dailyEntries;
+        }
+      }
+
+      const masterMap = new Map(masterItems.map(m => [m.item_code, m]));
+      currentItems = (dailyEntries || []).map(entry => {
+        const master = masterMap.get(entry.item_code) || {};
+        return {
+          id: entry.id,
+          location: entry.location,
+          item_code: entry.item_code,
+          description: entry.description || master.description || "",
+          category: entry.category || master.category || "Dry Food Items",
+          unit: entry.unit || master.unit || "Pcs",
+          opening: Number(entry.opening) || 0,
+          added: Number(entry.added) || 0,
+          issues: Number(entry.issues) || 0,
+          cost: Number(entry.cost) || Number(master.cost) || 0,
+          price: Number(entry.price) || Number(master.price) || 0,
+          comments: entry.comments || ""
+        };
+      }).sort((a, b) => a.item_code.localeCompare(b.item_code));
+
+      renderTable();
+      updateKPIs();
+      renderChart();
+    }
+
+    function renderTable() {
+      const tbody = $("tableBody");
+      tbody.replaceChildren();
+
+      const search = $("searchInput").value.toLowerCase();
+      const filtered = currentItems.filter(item => {
+        const matchesCat = currentActiveCategory === "All" || item.category === currentActiveCategory;
+        const matchesSearch = item.description.toLowerCase().includes(search) || item.item_code.toLowerCase().includes(search);
+        return matchesCat && matchesSearch;
+      });
+
+      if (!filtered.length) {
+        $("emptyState").classList.remove("hidden");
+        return;
+      }
+      $("emptyState").classList.add("hidden");
+
+      filtered.forEach(item => {
+        const closing = Number(item.opening) + Number(item.added) - Number(item.issues);
+        const rev = Number(item.issues) * Number(item.price);
+
+        const tr = document.createElement("tr");
+        tr.className = "hover:bg-slate-50";
+        tr.innerHTML = `
+          <td class="p-3 font-mono font-semibold text-slate-500">${item.item_code}</td>
+          <td class="p-3 font-bold text-slate-800">${item.description}</td>
+          <td class="p-3">${item.category}</td>
+          <td class="p-3 text-center">${item.unit}</td>
+          <td class="p-3 text-center font-semibold">${item.opening}</td>
+          <td class="p-3 text-center text-emerald-600">+${item.added}</td>
+          <td class="p-3 text-center text-amber-600">-${item.issues}</td>
+          <td class="p-3 text-center font-extrabold ${closing <= 5 ? 'text-rose-600' : ''}">${closing}</td>
+          <td class="p-3 text-right font-mono">$${Number(item.cost).toFixed(2)}</td>
+          <td class="p-3 text-right font-mono">$${Number(item.price).toFixed(2)}</td>
+          <td class="p-3 text-right font-mono text-emerald-600">$${rev.toFixed(2)}</td>
+          <td class="p-3 text-slate-500">${item.comments || '--'}</td>
+          <td class="p-3 text-center">
+            <button onclick="openEditItemModal(${item.id})" class="bg-amber-100 hover:bg-amber-200 text-amber-800 px-2.5 py-1 rounded text-[10px] font-bold">
+              <i class="fa-solid fa-pen mr-1"></i>${isManager() ? "Edit" : "Log"}
+            </button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function updateKPIs() {
+      let totalIssues = 0;
+      let totalRevenue = 0;
+      let grossProfit = 0;
+      let lowStock = 0;
+
+      currentItems.forEach(item => {
+        const issues = Number(item.issues) || 0;
+        const closing = Number(item.opening) + Number(item.added) - issues;
+        const rev = issues * Number(item.price);
+        const costTotal = issues * Number(item.cost);
+
+        totalIssues += issues;
+        totalRevenue += rev;
+        grossProfit += (rev - costTotal);
+
+        if (closing <= 5) lowStock++;
+      });
+
+      $("statTotalItems").textContent = currentItems.length;
+      $("statTotalIssues").textContent = totalIssues;
+      $("statDailyRevenue").textContent = `$${totalRevenue.toFixed(2)}`;
+      $("statGrossProfit").textContent = `$${grossProfit.toFixed(2)}`;
+      $("statLowStock").textContent = lowStock;
+    }
+
+    function renderChart() {
+      const canvas = $("categoryChart");
+      if (!canvas) return;
+
+      const categoryMap = {};
+      currentItems.forEach(item => {
+        const issues = Number(item.issues) || 0;
+        if (issues <= 0) return;
+        categoryMap[item.category] = (categoryMap[item.category] || 0) + issues;
+      });
+
+      const labels = Object.keys(categoryMap);
+      const data = Object.values(categoryMap);
+
+      if (chartInstance) chartInstance.destroy();
+
+      if (!labels.length) {
+        chartInstance = new Chart(canvas.getContext("2d"), {
+          type: "bar",
+          data: {
+            labels: ["No issues"],
+            datasets: [{ label: "Issues", data: [0], backgroundColor: ["#e2e8f0"] }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: { y: { beginAtZero: true } }
+          }
+        });
+        return;
+      }
+
+      chartInstance = new Chart(canvas.getContext("2d"), {
+        type: "bar",
+        data: {
+          labels,
+          datasets: [{
+            label: "Issues",
+            data,
+            backgroundColor: ["#3b82f6", "#22c55e", "#f59e0b", "#ef4444", "#8b5cf6", "#14b8a6"]
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: { y: { beginAtZero: true } }
+        }
+      });
+    }
+
+    function filterCategory(category) {
+      currentActiveCategory = category;
+      const buttons = document.querySelectorAll(".cat-btn");
+      buttons.forEach(btn => {
+        const active = btn.dataset.category === category;
+        btn.classList.toggle("bg-brand-600", active);
+        btn.classList.toggle("text-white", active);
+        btn.classList.toggle("bg-slate-100", !active);
+        btn.classList.toggle("text-slate-700", !active);
+      });
+      renderTable();
+    }
+
+    function setToday() {
+      $("selectedDate").value = localDateString();
+      loadCloudData(activeLocation);
+    }
+
+    function changeDate(offset) {
+      const current = new Date(dateKey() + "T12:00:00");
+      current.setDate(current.getDate() + offset);
+      $("selectedDate").value = localDateString(current);
+      loadCloudData(activeLocation);
+    }
+
+    function downloadMasterTemplate() {
+      const masterData = currentItems.map(i => ({
+        "Item Code": i.item_code,
+        "Item Description": i.description,
+        "Category": i.category,
+        "Unit": i.unit,
+        "Cost Price": i.cost,
+        "Selling Price": i.price
+      }));
+
+      const worksheet = XLSX.utils.json_to_sheet(masterData);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Master Catalog");
+      worksheet["!cols"] = [{ wch: 12 }, { wch: 28 }, { wch: 20 }, { wch: 10 }, { wch: 12 }, { wch: 14 }];
+      XLSX.writeFile(workbook, "GAS_Master_Inventory_Catalog.xlsx");
+    }
+
+    async function handleExcelUpload(e) {
+      if (!isManager()) return;
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = async (evt) => {
+        try {
+          const data = new Uint8Array(evt.target.result);
+          const workbook = XLSX.read(data, { type: "array" });
+          const firstSheetName = workbook.SheetNames[0];
+          const worksheet = workbook.Sheets[firstSheetName];
+          const rows = XLSX.utils.sheet_to_json(worksheet);
+
+          if (!rows || rows.length === 0) {
+            alert("The uploaded Excel file contains no data.");
+            return;
+          }
+
+          for (const row of rows) {
+            const itemCode = String(row["Item Code"] || row["ItemCode"] || row["ID"] || "").trim();
+            const description = String(row["Item Description"] || row["Description"] || "").trim();
+            const category = String(row["Category"] || "Dry Food Items").trim();
+            const unit = String(row["Unit"] || "Pcs").trim();
+            const cost = Number(row["Cost Price"] || row["Cost"] || 0);
+            const price = Number(row["Selling Price"] || row["Price"] || 0);
+
+            if (!itemCode || !description) continue;
+
+            await db.from("master_items").upsert([{
+              item_code: itemCode,
+              description,
+              category,
+              unit,
+              cost,
+              price,
+              updated_at: new Date().toISOString()
+            }]);
+          }
+
+          await logAudit("Excel Upload", `Uploaded ${rows.length} master catalog items`);
+          alert("Master inventory catalog updated successfully!");
+          e.target.value = "";
+          showSaveStatus();
+          await loadCloudData(activeLocation);
+        } catch (err) {
+          console.error(err);
+          alert("Failed to process Excel file. Please use the exported Master Template.");
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
+    function openEditItemModal(id) {
+      const item = currentItems.find(i => i.id === id);
+      if (!item) return;
+
+      const manager = isManager();
+      $("modalTitle").textContent = manager ? `Edit Item: ${item.description}` : `Log Stock for: ${item.description}`;
+      $("editEntryId").value = item.id;
+      $("itemId").value = item.item_code;
+      $("itemDescription").value = item.description;
+      $("itemCategory").value = item.category;
+      $("itemSpec").value = item.unit;
+      $("itemOpening").value = item.opening;
+      $("itemAdded").value = item.added;
+      $("itemIssues").value = item.issues;
+      $("itemCost").value = item.cost;
+      $("itemPrice").value = item.price;
+      $("itemComments").value = item.comments || "";
+      $("itemLocation").value = item.location || activeLocation;
+
+      $("itemDescription").disabled = !manager;
+      $("itemCategory").disabled = !manager;
+      $("itemSpec").disabled = !manager;
+      $("itemOpening").disabled = !manager;
+      $("itemCost").disabled = !manager;
+      $("itemPrice").disabled = !manager;
+
+      if (manager) {
+        $("deleteItemBtn").classList.remove("hidden");
+        $("itemLocation").disabled = false;
+      } else {
+        $("deleteItemBtn").classList.add("hidden");
+        $("itemLocation").disabled = true;
+      }
+
+      $("itemModal").classList.remove("hidden");
+      $("itemModal").classList.add("flex");
+    }
+
+    function openNewItemModal() {
+      if (!isManager()) return;
+
+      $("modalTitle").textContent = "Add New Master Item";
+      $("editEntryId").value = "";
+
+      let maxCode = 0;
+      currentItems.forEach(i => {
+        const num = parseInt(i.item_code, 10);
+        if (!isNaN(num) && num > maxCode) maxCode = num;
+      });
+
+      $("itemId").value = String(maxCode + 1).padStart(3, "0");
+      $("itemDescription").value = "";
+      $("itemCategory").value = "Dry Food Items";
+      $("itemSpec").value = "Kg";
+      $("itemOpening").value = "0";
+      $("itemAdded").value = "0";
+      $("itemIssues").value = "0";
+      $("itemCost").value = "0.00";
+      $("itemPrice").value = "0.00";
+      $("itemComments").value = "";
+      $("itemLocation").value = activeLocation;
+
+      $("itemDescription").disabled = false;
+      $("itemCategory").disabled = false;
+      $("itemSpec").disabled = false;
+      $("itemOpening").disabled = false;
+      $("itemCost").disabled = false;
+      $("itemPrice").disabled = false;
+      $("itemLocation").disabled = false;
+
+      $("deleteItemBtn").classList.add("hidden");
+      $("itemModal").classList.remove("hidden");
+      $("itemModal").classList.add("flex");
+    }
+
+    function closeItemModal() {
+      $("itemModal").classList.add("hidden");
+      $("itemModal").classList.remove("flex");
+    }
+
+    async function saveItem(e) {
+      e.preventDefault();
+
+      const entryId = Number($("editEntryId").value);
+      const manager = isManager();
+      const itemCode = $("itemId").value.trim();
+      const targetLocation = $("itemLocation").value || activeLocation;
+
+      if (manager) {
+        const { error: masterError } = await db.from("master_items").upsert([{
           item_code: itemCode,
-          description,
-          category,
-          unit,
-          cost,
-          price,
+          description: $("itemDescription").value.trim(),
+          category: $("itemCategory").value,
+          unit: $("itemSpec").value.trim(),
+          cost: Number($("itemCost").value) || 0,
+          price: Number($("itemPrice").value) || 0,
           updated_at: new Date().toISOString()
         }]);
+
+        if (masterError) {
+          alert("Unable to update item master record.");
+          return;
+        }
       }
 
-      await logAudit("Excel Upload", `Uploaded ${rows.length} master catalog items`);
-      alert("Master inventory catalog updated successfully!");
-      e.target.value = "";
+      const stockPayload = {
+        added: Number($("itemAdded").value) || 0,
+        issues: Number($("itemIssues").value) || 0,
+        comments: $("itemComments").value.trim(),
+        updated_at: new Date().toISOString()
+      };
+
+      if (manager) {
+        stockPayload.opening = Number($("itemOpening").value) || 0;
+      }
+
+      if (entryId) {
+        const { data, error } = await db.from("inventory_entries")
+          .update(stockPayload)
+          .eq("id", entryId)
+          .eq("location", targetLocation)
+          .select();
+
+        if (error) {
+          alert("This quantity can only be edited for the selected location.");
+          return;
+        }
+
+        if (!data || data.length === 0) {
+          alert("No stock record found for this item in the selected location.");
+          return;
+        }
+
+        await logAudit(manager ? "Update Item" : "Log Stock", `Updated item ${itemCode} at ${targetLocation}`);
+      } else if (manager) {
+        stockPayload.location = targetLocation;
+        stockPayload.entry_date = dateKey();
+        stockPayload.item_code = itemCode;
+
+        const { error } = await db.from("inventory_entries").insert([stockPayload]);
+
+        if (error) {
+          alert("Unable to create stock entry for the selected location.");
+          return;
+        }
+
+        await logAudit("Add Item", `Added new master item ${itemCode} at ${targetLocation}`);
+      }
+
+      if (manager && targetLocation !== activeLocation) {
+        activeLocation = targetLocation;
+        $("locationSelector").value = targetLocation;
+      }
+
+      closeItemModal();
       showSaveStatus();
       await loadCloudData(activeLocation);
-    } catch (err) {
-      console.error(err);
-      alert("Failed to process Excel file. Please use the exported Master Template.");
-    }
-  };
-  reader.readAsArrayBuffer(file);
-}
-
-function openEditItemModal(id) {
-  const item = currentItems.find(i => i.id === id);
-  if (!item) return;
-
-  const manager = isManager();
-  $("modalTitle").textContent = manager ? `Edit Item: ${item.description}` : `Log Stock for: ${item.description}`;
-  $("editEntryId").value = item.id;
-  $("itemId").value = item.item_code;
-  $("itemDescription").value = item.description;
-  $("itemCategory").value = item.category;
-  $("itemSpec").value = item.unit;
-  $("itemOpening").value = item.opening;
-  $("itemAdded").value = item.added;
-  $("itemIssues").value = item.issues;
-  $("itemCost").value = item.cost;
-  $("itemPrice").value = item.price;
-  $("itemComments").value = item.comments || "";
-  $("itemLocation").value = item.location || activeLocation;
-
-  $("itemDescription").disabled = !manager;
-  $("itemCategory").disabled = !manager;
-  $("itemSpec").disabled = !manager;
-  $("itemOpening").disabled = !manager;
-  $("itemCost").disabled = !manager;
-  $("itemPrice").disabled = !manager;
-
-  if (manager) {
-    $("deleteItemBtn").classList.remove("hidden");
-    $("itemLocation").disabled = false;
-  } else {
-    $("deleteItemBtn").classList.add("hidden");
-    $("itemLocation").disabled = true;
-  }
-
-  $("itemModal").classList.remove("hidden");
-  $("itemModal").classList.add("flex");
-}
-
-function openNewItemModal() {
-  if (!isManager()) return;
-  $("modalTitle").textContent = "Add New Master Item";
-  $("editEntryId").value = "";
-
-  let maxCode = 0;
-  currentItems.forEach(i => {
-    const num = parseInt(i.item_code, 10);
-    if (!isNaN(num) && num > maxCode) maxCode = num;
-  });
-
-  $("itemId").value = String(maxCode + 1).padStart(3, '0');
-  $("itemDescription").value = "";
-  $("itemCategory").value = "Dry Food Items";
-  $("itemSpec").value = "Kg";
-  $("itemOpening").value = "0";
-  $("itemAdded").value = "0";
-  $("itemIssues").value = "0";
-  $("itemCost").value = "0.00";
-  $("itemPrice").value = "0.00";
-  $("itemComments").value = "";
-  $("itemLocation").value = activeLocation;
-
-  $("itemDescription").disabled = false;
-  $("itemCategory").disabled = false;
-  $("itemSpec").disabled = false;
-  $("itemOpening").disabled = false;
-  $("itemCost").disabled = false;
-  $("itemPrice").disabled = false;
-  $("itemLocation").disabled = false;
-
-  $("deleteItemBtn").classList.add("hidden");
-  $("itemModal").classList.remove("hidden");
-  $("itemModal").classList.add("flex");
-}
-
-function closeItemModal() {
-  $("itemModal").classList.add("hidden");
-  $("itemModal").classList.remove("flex");
-}
-
-async function saveItem(e) {
-  e.preventDefault();
-
-  const entryId = Number($("editEntryId").value);
-  const manager = isManager();
-  const itemCode = $("itemId").value.trim();
-  const targetLocation = $("itemLocation").value || activeLocation;
-
-  if (manager) {
-    const { error: masterError } = await db.from("master_items").upsert([{
-      item_code: itemCode,
-      description: $("itemDescription").value.trim(),
-      category: $("itemCategory").value,
-      unit: $("itemSpec").value.trim(),
-      cost: Number($("itemCost").value) || 0,
-      price: Number($("itemPrice").value) || 0,
-      updated_at: new Date().toISOString()
-    }]);
-
-    if (masterError) {
-      alert("Unable to update item master record.");
-      return;
-    }
-  }
-
-  const stockPayload = {
-    added: Number($("itemAdded").value) || 0,
-    issues: Number($("itemIssues").value) || 0,
-    comments: $("itemComments").value.trim(),
-    updated_at: new Date().toISOString()
-  };
-
-  if (manager) stockPayload.opening = Number($("itemOpening").value) || 0;
-
-  if (entryId) {
-    const { data, error } = await db.from("inventory_entries")
-      .update(stockPayload)
-      .eq("id", entryId)
-      .eq("location", targetLocation)
-      .select();
-
-    if (error) {
-      alert("This quantity can only be edited for the selected location.");
-      return;
     }
 
-    if (!data || data.length === 0) {
-      alert("No stock record found for this item in the selected location.");
-      return;
+    async function deleteCurrentItem() {
+      if (!isManager()) return;
+
+      const entryId = Number($("editEntryId").value);
+      const itemCode = $("itemId").value.trim();
+      const description = $("itemDescription").value.trim();
+      const targetLocation = $("itemLocation").value || activeLocation;
+
+      if (!entryId) {
+        alert("Please select a valid stock entry to delete.");
+        return;
+      }
+
+      if (confirm(`Are you sure you want to delete "${description}" (${itemCode}) for ${targetLocation}?`)) {
+        const { data, error } = await db.from("inventory_entries")
+          .delete()
+          .eq("id", entryId)
+          .eq("location", targetLocation)
+          .select();
+
+        if (error) {
+          alert("Unable to delete this item for the selected location.");
+          return;
+        }
+
+        if (!data || data.length === 0) {
+          alert("This stock entry is not available in the selected location.");
+          return;
+        }
+
+        await logAudit("Delete Item", `Deleted stock entry for ${itemCode} (${description}) at ${targetLocation}`);
+
+        if (targetLocation !== activeLocation) {
+          activeLocation = targetLocation;
+          $("locationSelector").value = targetLocation;
+        }
+
+        closeItemModal();
+        await loadCloudData(activeLocation);
+      }
     }
 
-    await logAudit(manager ? "Update Item" : "Log Stock", `Updated item ${itemCode} at ${targetLocation}`);
-  } else if (manager) {
-    stockPayload.location = targetLocation;
-    stockPayload.entry_date = dateKey();
-    stockPayload.item_code = itemCode;
+    async function changeMyPassword(e) {
+      e.preventDefault();
 
-    const { error } = await db.from("inventory_entries").insert([stockPayload]);
+      const currentPass = $("myCurrentPassword").value.trim();
+      const newPass = $("myNewPassword").value.trim();
+      const confirmPass = $("myConfirmPassword").value.trim();
+      const errDiv = $("changePassError");
 
-    if (error) {
-      alert("Unable to create stock entry for the selected location.");
-      return;
+      if (!currentUser || !currentUser.email) {
+        errDiv.textContent = "Session is not active.";
+        errDiv.classList.remove("hidden");
+        return;
+      }
+
+      try {
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email: currentUser.email,
+          password: currentPass
+        });
+
+        if (signInError) {
+          errDiv.textContent = "Current password is incorrect.";
+          errDiv.classList.remove("hidden");
+          return;
+        }
+
+        if (newPass !== confirmPass) {
+          errDiv.textContent = "New passwords do not match.";
+          errDiv.classList.remove("hidden");
+          return;
+        }
+
+        const { error: updateError } = await supabase.auth.updateUser({
+          password: newPass
+        });
+
+        if (updateError) {
+          errDiv.textContent = "Error updating password.";
+          errDiv.classList.remove("hidden");
+          return;
+        }
+
+        alert("Your password has been updated successfully!");
+        closeChangePasswordModal();
+      } catch (err) {
+        console.error(err);
+        errDiv.textContent = "Unable to update password.";
+        errDiv.classList.remove("hidden");
+      }
     }
 
-    await logAudit("Add Item", `Added new master item ${itemCode} at ${targetLocation}`);
-  }
-
-  if (manager && targetLocation !== activeLocation) {
-    activeLocation = targetLocation;
-    $("locationSelector").value = targetLocation;
-  }
-
-  closeItemModal();
-  showSaveStatus();
-  await loadCloudData(activeLocation);
-}
-
-async function deleteCurrentItem() {
-  if (!isManager()) return;
-
-  const entryId = Number($("editEntryId").value);
-  const itemCode = $("itemId").value.trim();
-  const description = $("itemDescription").value.trim();
-  const targetLocation = $("itemLocation").value || activeLocation;
-
-  if (!entryId) {
-    alert("Please select a valid stock entry to delete.");
-    return;
-  }
-
-  if (confirm(`Are you sure you want to delete "${description}" (${itemCode}) for ${targetLocation}?`)) {
-    const { data, error } = await db.from("inventory_entries")
-      .delete()
-      .eq("id", entryId)
-      .eq("location", targetLocation)
-      .select();
-
-    if (error) {
-      alert("Unable to delete this item for the selected location.");
-      return;
+    function openChangePasswordModal() {
+      $("myCurrentPassword").value = "";
+      $("myNewPassword").value = "";
+      $("myConfirmPassword").value = "";
+      $("changePassError").classList.add("hidden");
+      $("changePasswordModal").classList.remove("hidden");
+      $("changePasswordModal").classList.add("flex");
     }
 
-    if (!data || data.length === 0) {
-      alert("This stock entry is not available in the selected location.");
-      return;
+    function closeChangePasswordModal() {
+      $("changePasswordModal").classList.add("hidden");
+      $("changePasswordModal").classList.remove("flex");
     }
 
-    await logAudit("Delete Item", `Deleted stock entry for ${itemCode} (${description}) at ${targetLocation}`);
+    function openReorderModal() {
+      const items = currentItems.filter(item => {
+        const closing = Number(item.opening) + Number(item.added) - Number(item.issues);
+        return closing <= 5;
+      });
 
-    if (targetLocation !== activeLocation) {
-      activeLocation = targetLocation;
-      $("locationSelector").value = targetLocation;
+      $("reorderLocationLabel").textContent = activeLocation;
+      const list = $("reorderItemsList");
+      list.innerHTML = "";
+
+      if (!items.length) {
+        list.innerHTML = `<div class="p-3 bg-slate-50 border border-slate-200 rounded-lg text-slate-500">No low-stock items at ${activeLocation}.</div>`;
+      } else {
+        items.forEach(item => {
+          const closing = Number(item.opening) + Number(item.added) - Number(item.issues);
+          const row = document.createElement("div");
+          row.className = "flex items-center justify-between bg-slate-50 border border-slate-200 rounded-lg p-2";
+          row.innerHTML = `
+            <span class="font-semibold">${item.item_code} - ${item.description}</span>
+            <span class="text-rose-600 font-bold">Closing: ${closing}</span>
+          `;
+          list.appendChild(row);
+        });
+      }
+
+      const draft = items.map(item => {
+        const closing = Number(item.opening) + Number(item.added) - Number(item.issues);
+        return `${item.item_code} | ${item.description} | Qty left: ${closing}`;
+      }).join("\n");
+
+      $("reorderDraftText").value = `LOW STOCK ALERT - ${activeLocation}\n\n${draft || "No items below threshold."}\n\nPlease reorder urgently.`;
+
+      $("reorderModal").classList.remove("hidden");
+      $("reorderModal").classList.add("flex");
     }
 
-    closeItemModal();
-    await loadCloudData(activeLocation);
-  }
-}
+    function closeReorderModal() {
+      $("reorderModal").classList.add("hidden");
+      $("reorderModal").classList.remove("flex");
+    }
 
-function openChangePasswordModal() {
-  $("myCurrentPassword").value = "";
-  $("myNewPassword").value = "";
-  $("myConfirmPassword").value = "";
-  $("changePassError").classList.add("hidden");
-  $("changePasswordModal").classList.remove("hidden");
-  $("changePasswordModal").classList.add("flex");
-}
+    function copyReorderText() {
+      $("reorderDraftText").select();
+      document.execCommand("copy");
+      alert("Reorder text copied to clipboard.");
+    }
 
-function closeChangePasswordModal() {
-  $("changePasswordModal").classList.add("hidden");
-  $("changePasswordModal").classList.remove("flex");
-}
+    async function openAuditModal() {
+      let query = db.from("audit_logs").select("*").order("created_at", { ascending: false });
+      if (!isManager()) query = query.eq("location", activeLocation);
+      const { data } = await query;
 
-async function changeMyPassword(e) {
-  e.preventDefault();
+      const list = $("auditList");
+      list.innerHTML = "";
 
-  const currentPass = $("myCurrentPassword").value.trim();
-  const newPass = $("myNewPassword").value.trim();
-  const confirmPass = $("myConfirmPassword").value.trim();
-  const errDiv = $("changePassError");
+      if (!data || !data.length) {
+        list.innerHTML = `<div class="text-slate-500">No audit entries found.</div>`;
+      } else {
+        data.forEach(log => {
+          const item = document.createElement("div");
+          item.className = "border border-slate-200 rounded-lg p-2 bg-slate-50";
+          item.innerHTML = `
+            <div class="font-semibold text-slate-800">${log.action}<span class="text-slate-500 font-normal"> (${new Date(log.created_at).toLocaleString()})</span></div>
+            <div class="text-slate-600 mt-1">User: ${log.username || "--"} | Role: ${log.role || "--"} | Location: ${log.location || "--"}</div>
+            <div class="text-slate-500 mt-1">${log.details || "--"}</div>
+          `;
+          list.appendChild(item);
+        });
+      }
 
-  if (currentPass !== currentUser.password) {
-    errDiv.textContent = "Current password is incorrect.";
-    errDiv.classList.remove("hidden");
-    return;
-  }
+      $("auditModal").classList.remove("hidden");
+      $("auditModal").classList.add("flex");
+    }
 
-  if (newPass !== confirmPass) {
-    errDiv.textContent = "New passwords do not match.";
-    errDiv.classList.remove("hidden");
-    return;
-  }
+    function closeAuditModal() {
+      $("auditModal").classList.add("hidden");
+      $("auditModal").classList.remove("flex");
+    }
 
-  const { error } = await db.from("store_users").update({ password: newPass }).eq("id", currentUser.id);
-  if (error) {
-    errDiv.textContent = "Error updating password.";
-    errDiv.classList.remove("hidden");
-    return;
-  }
+    async function renderLocationList() {
+      const { data } = await db.from("locations").select("*").order("name");
+      const container = $("locationList");
+      container.innerHTML = "";
 
-  currentUser.password = newPass;
-  await logAudit("Password Change", `User ${currentUser.username} changed their own password`);
-  alert("Your password has been updated successfully!");
-  closeChangePasswordModal();
-}
+      if (!data || !data.length) {
+        container.innerHTML = `<div class="text-sm text-slate-500">No locations yet.</div>`;
+        return;
+      }
 
-function openReorderModal() {
-  const items = currentItems.filter(item => {
-    const closing = Number(item.opening) + Number(item.added) - Number(item.issues);
-    return closing <= 5;
-  });
+      data.forEach(loc => {
+        const row = document.createElement("div");
+        row.className = "flex justify-between items-center bg-slate-50 border border-slate-200 rounded-lg p-2 text-sm";
+        row.innerHTML = `
+          <span class="font-semibold">${loc.name}</span>
+          <button type="button" data-delete-location="${loc.id}" class="delete-location-btn text-rose-600 hover:text-rose-700 font-semibold">Delete</button>
+        `;
+        container.appendChild(row);
+      });
 
-  $("reorderLocationLabel").textContent = activeLocation;
-  const list = $("reorderItemsList");
-  list.innerHTML = "";
+      container.querySelectorAll(".delete-location-btn").forEach(btn => {
+        btn.addEventListener("click", async () => {
+          const id = Number(btn.dataset.deleteLocation);
+          if (!id) return;
+          if (confirm("Delete this location?")) {
+            await db.from("locations").delete().eq("id", id);
+            await renderLocationList();
+            await loadLocations();
+          }
+        });
+      });
+    }
 
-  if (!items.length) {
-    list.innerHTML = `<div class="p-3 bg-slate-50 border border-slate-200 rounded-lg text-slate-500">No low-stock items at ${activeLocation}.</div>`;
-  } else {
-    items.forEach(item => {
-      const closing = Number(item.opening) + Number(item.added) - Number(item.issues);
-      const row = document.createElement("div");
-      row.className = "flex items-center justify-between bg-slate-50 border border-slate-200 rounded-lg p-2";
-      row.innerHTML = `
-        <span class="font-semibold">${item.item_code} - ${item.description}</span>
-        <span class="text-rose-600 font-bold">Closing: ${closing}</span>
-      `;
-      list.appendChild(row);
-    });
-  }
+    async function createLocation(e) {
+      e.preventDefault();
 
-  const draft = items.map(item => {
-    const closing = Number(item.opening) + Number(item.added) - Number(item.issues);
-    return `${item.item_code} | ${item.description} | Qty left: ${closing}`;
-  }).join("\n");
+      const name = $("newLocationName").value.trim();
+      if (!name) return;
 
-  $("reorderDraftText").value = `LOW STOCK ALERT - ${activeLocation}\n\n${draft || "No items below threshold."}\n\nPlease reorder urgently.`;
-
-  $("reorderModal").classList.remove("hidden");
-  $("reorderModal").classList.add("flex");
-}
-
-function closeReorderModal() {
-  $("reorderModal").classList.add("hidden");
-  $("reorderModal").classList.remove("flex");
-}
-
-function copyReorderText() {
-  $("reorderDraftText").select();
-  document.execCommand("copy");
-  alert("Reorder text copied to clipboard.");
-}
-
-async function openAuditModal() {
-  let query = db.from("audit_logs").select("*").order("created_at", { ascending: false });
-  if (!isManager()) query = query.eq("location", activeLocation);
-  const { data } = await query;
-
-  const list = $("auditList");
-  list.innerHTML = "";
-
-  if (!data || !data.length) {
-    list.innerHTML = `<div class="text-slate-500">No audit entries found.</div>`;
-  } else {
-    data.forEach(log => {
-      const item = document.createElement("div");
-      item.className = "border border-slate-200 rounded-lg p-2 bg-slate-50";
-      item.innerHTML = `
-        <div class="font-semibold text-slate-800">${log.action}<span class="text-slate-500 font-normal"> (${new Date(log.created_at).toLocaleString()})</span></div>
-        <div class="text-slate-600 mt-1">User: ${log.username || "--"} | Role: ${log.role || "--"} | Location: ${log.location || "--"}</div>
-        <div class="text-slate-500 mt-1">${log.details || "--"}</div>
-      `;
-      list.appendChild(item);
-    });
-  }
-
-  $("auditModal").classList.remove("hidden");
-  $("auditModal").classList.add("flex");
-}
-
-function closeAuditModal() {
-  $("auditModal").classList.add("hidden");
-  $("auditModal").classList.remove("flex");
-}
-
-async function renderLocationList() {
-  const { data } = await db.from("locations").select("*").order("name");
-  const container = $("locationList");
-  container.innerHTML = "";
-
-  if (!data || !data.length) {
-    container.innerHTML = `<div class="text-sm text-slate-500">No locations yet.</div>`;
-    return;
-  }
-
-  data.forEach(loc => {
-    const row = document.createElement("div");
-    row.className = "flex justify-between items-center bg-slate-50 border border-slate-200 rounded-lg p-2 text-sm";
-    row.innerHTML = `
-      <span class="font-semibold">${loc.name}</span>
-      <button type="button" data-delete-location="${loc.id}" class="delete-location-btn text-rose-600 hover:text-rose-700 font-semibold">Delete</button>
-    `;
-    container.appendChild(row);
-  });
-
-  container.querySelectorAll(".delete-location-btn").forEach(btn => {
-    btn.addEventListener("click", async () => {
-      const id = Number(btn.dataset.deleteLocation);
-      if (!id) return;
-      if (confirm("Delete this location?")) {
-        await db.from("locations").delete().eq("id", id);
+      const { error } = await db.from("locations").insert([{ name }]);
+      if (!error) {
+        $("newLocationName").value = "";
         await renderLocationList();
         await loadLocations();
+      } else {
+        alert("Location already exists or cannot be created.");
       }
-    });
-  });
-}
-
-async function createLocation(e) {
-  e.preventDefault();
-
-  const name = $("newLocationName").value.trim();
-  if (!name) return;
-
-  const { error } = await db.from("locations").insert([{ name }]);
-  if (!error) {
-    $("newLocationName").value = "";
-    await renderLocationList();
-    await loadLocations();
-  } else {
-    alert("Location already exists or cannot be created.");
-  }
-}
-
-async function renderAccountList() {
-  const { data } = await db.from("store_users").select("*").order("name");
-  const container = $("accountList");
-  container.innerHTML = "";
-
-  if (!data || !data.length) {
-    container.innerHTML = `<div class="text-sm text-slate-500">No accounts found.</div>`;
-    return;
-  }
-
-  data.forEach(user => {
-    const row = document.createElement("div");
-    row.className = "flex justify-between items-center gap-3 bg-slate-50 border border-slate-200 rounded-lg p-3";
-    row.innerHTML = `
-      <div>
-        <div class="font-semibold">${user.name}</div>
-        <div class="text-xs text-slate-500">${user.username} • ${user.role} • ${user.location}</div>
-      </div>
-      <div class="flex gap-2">
-        <button type="button" data-edit-user="${user.id}" class="edit-user-btn bg-amber-100 hover:bg-amber-200 text-amber-800 rounded-lg px-2 py-1 text-xs font-bold">Edit</button>
-        <button type="button" data-disable-user="${user.id}" class="disable-user-btn bg-rose-100 hover:bg-rose-200 text-rose-700 rounded-lg px-2 py-1 text-xs font-bold">${user.disabled ? "Enable" : "Disable"}</button>
-      </div>
-    `;
-    container.appendChild(row);
-  });
-
-  container.querySelectorAll(".edit-user-btn").forEach(btn => {
-    btn.addEventListener("click", async () => {
-      const id = Number(btn.dataset.editUser);
-      await openEditUserModal(id);
-    });
-  });
-
-  container.querySelectorAll(".disable-user-btn").forEach(btn => {
-    btn.addEventListener("click", async () => {
-      const id = Number(btn.dataset.disableUser);
-      const { data: user } = await db.from("store_users").select("*").eq("id", id).single();
-      if (!user) return;
-      await db.from("store_users").update({ disabled: !user.disabled }).eq("id", id);
-      await renderAccountList();
-    });
-  });
-}
-
-async function createAccount(e) {
-  e.preventDefault();
-
-  const username = $("newUsername").value.trim();
-  const name = $("newDisplayName").value.trim();
-  const password = $("newPassword").value.trim();
-  const role = $("newUserRole").value;
-  const location = $("newUserLocation").value;
-
-  if (!username || !name || !password) return;
-
-  const { data: authData, error: authError } = await supabase.auth.signUp({
-    email: `${username}@gas.local`,
-    password
-  });
-
-  if (authError || !authData.user) {
-    alert("Could not create secure auth account.");
-    return;
-  }
-
-  const { error } = await db.from("store_users").insert([{
-    username,
-    name,
-    email: `${username}@gas.local`,
-    password: "", // optional placeholder; not used for auth
-    role,
-    location,
-    auth_user_id: authData.user.id,
-    disabled: false
-  }]);
-
-  if (!error) {
-    $("newUsername").value = "";
-    $("newDisplayName").value = "";
-    $("newPassword").value = "";
-    await renderAccountList();
-  } else {
-    alert("Username already exists or could not be created.");
-  }
-}
-
-async function openEditUserModal(id) {
-  const { data } = await db.from("store_users").select("*").eq("id", id).single();
-  if (!data) return;
-
-  $("editUserId").value = data.id;
-  $("editUsernameDisplay").value = data.username;
-  $("editUserFullName").value = data.name;
-  $("editUserRole").value = data.role;
-  $("editUserLocation").value = data.location || "Juba Depot";
-  $("editUserPassword").value = "";
-
-  $("editUserModal").classList.remove("hidden");
-  $("editUserModal").classList.add("flex");
-}
-
-function closeEditUserModal() {
-  $("editUserModal").classList.add("hidden");
-  $("editUserModal").classList.remove("flex");
-}
-
-async function saveUserEdits(e) {
-  e.preventDefault();
-
-  const id = Number($("editUserId").value);
-  const name = $("editUserFullName").value.trim();
-  const role = $("editUserRole").value;
-  const location = $("editUserLocation").value;
-  const password = $("editUserPassword").value.trim();
-
-  const updateObj = { name, role, location };
-  if (password) updateObj.password = password;
-
-  const { error } = await db.from("store_users").update(updateObj).eq("id", id);
-
-  if (!error) {
-    closeEditUserModal();
-    await renderAccountList();
-  } else {
-    alert("Failed to update user.");
-  }
-}
-
-function exportCSV() {
-  const rows = currentItems.map(item => ({
-    "Item Code": item.item_code,
-    "Description": item.description,
-    "Category": item.category,
-    "Unit": item.unit,
-    "Opening": item.opening,
-    "Added": item.added,
-    "Issues": item.issues,
-    "Closing": Number(item.opening) + Number(item.added) - Number(item.issues),
-    "Cost Price": Number(item.cost).toFixed(2),
-    "Sale Price": Number(item.price).toFixed(2),
-    "Revenue": (Number(item.issues) * Number(item.price)).toFixed(2),
-    "Comments": item.comments || ""
-  }));
-
-  const worksheet = XLSX.utils.json_to_sheet(rows);
-  const workbook = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook, worksheet, `${activeLocation} ${dateKey()}`);
-  XLSX.writeFile(workbook, `GAS_${activeLocation}_${dateKey()}.csv`);
-}
-
-async function openUserManager() {
-  await loadLocations();
-  await renderLocationList();
-  await renderAccountList();
-  $("userManagerModal").classList.remove("hidden");
-  $("userManagerModal").classList.add("flex");
-}
-
-function closeUserManager() {
-  $("userManagerModal").classList.add("hidden");
-  $("userManagerModal").classList.remove("flex");
-}
-
-async function initSession() {
-  const { data: sessionData } = await supabase.auth.getSession();
-  if (!sessionData.session) return;
-
-  const { data: appUser, error } = await db
-    .from("store_users")
-    .select("*")
-    .eq("auth_user_id", sessionData.session.user.id)
-    .eq("disabled", false)
-    .maybeSingle();
-
-  if (!error && appUser) {
-    currentUser = appUser;
-    $("displayUserName").textContent = `${currentUser.name} (${currentUser.role})`;
-    $("locationBadge").textContent = activeLocation;
-
-    if (currentUser.role === "Manager") {
-      activeLocation = "Juba Depot";
-      $("managerLocationBox").classList.remove("hidden");
-      $("managerLocationBox").classList.add("flex");
-      $("manageUsersBtn").classList.remove("hidden");
-      $("auditBtn").classList.remove("hidden");
-      $("newItemBtn").classList.remove("hidden");
-      $("downloadTemplateBtn").classList.remove("hidden");
-      $("uploadExcelBtn").classList.remove("hidden");
-    } else {
-      activeLocation = currentUser.location;
-      $("managerLocationBox").classList.add("hidden");
-      $("manageUsersBtn").classList.add("hidden");
-      $("auditBtn").classList.add("hidden");
-      $("newItemBtn").classList.add("hidden");
-      $("downloadTemplateBtn").classList.add("hidden");
-      $("uploadExcelBtn").classList.add("hidden");
     }
 
-    $("loginModal").classList.add("hidden");
-    await loadLocations();
-    await loadCloudData(activeLocation);
-  }
-}
+    async function renderAccountList() {
+      const { data } = await db.from("store_users").select("*").order("name");
+      const container = $("accountList");
+      container.innerHTML = "";
 
-$("selectedDate").value = localDateString();
-updateDayLabel();
-bindEvents();
-initSession();
-</script>
+      if (!data || !data.length) {
+        container.innerHTML = `<div class="text-sm text-slate-500">No accounts found.</div>`;
+        return;
+      }
+
+      data.forEach(user => {
+        const row = document.createElement("div");
+        row.className = "flex justify-between items-center gap-3 bg-slate-50 border border-slate-200 rounded-lg p-3";
+        row.innerHTML = `
+          <div>
+            <div class="font-semibold">${user.name}</div>
+            <div class="text-xs text-slate-500">${user.username} • ${user.role} • ${user.location}</div>
+          </div>
+          <div class="flex gap-2">
+            <button type="button" data-edit-user="${user.id}" class="edit-user-btn bg-amber-100 hover:bg-amber-200 text-amber-800 rounded-lg px-2 py-1 text-xs font-bold">Edit</button>
+            <button type="button" data-disable-user="${user.id}" class="disable-user-btn bg-rose-100 hover:bg-rose-200 text-rose-700 rounded-lg px-2 py-1 text-xs font-bold">${user.disabled ? "Enable" : "Disable"}</button>
+          </div>
+        `;
+        container.appendChild(row);
+      });
+
+      container.querySelectorAll(".edit-user-btn").forEach(btn => {
+        btn.addEventListener("click", async () => {
+          const id = Number(btn.dataset.editUser);
+          await openEditUserModal(id);
+        });
+      });
+
+      container.querySelectorAll(".disable-user-btn").forEach(btn => {
+        btn.addEventListener("click", async () => {
+          const id = Number(btn.dataset.disableUser);
+          const { data: user } = await db.from("store_users").select("*").eq("id", id).single();
+          if (!user) return;
+
+          await db.from("store_users").update({ disabled: !user.disabled }).eq("id", id);
+          await renderAccountList();
+        });
+      });
+    }
+
+    async function createAccount(e) {
+      e.preventDefault();
+
+      const username = $("newUsername").value.trim();
+      const name = $("newDisplayName").value.trim();
+      const password = $("newPassword").value.trim();
+      const role = $("newUserRole").value;
+      const location = $("newUserLocation").value;
+
+      if (!username || !name || !password) return;
+
+      const email = `${username}@gas.local`;
+
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email,
+        password
+      });
+
+      if (authError || !authData.user) {
+        alert("Could not create secure auth account.");
+        return;
+      }
+
+      const { error } = await db.from("store_users").insert([{
+        username,
+        name,
+        email,
+        auth_user_id: authData.user.id,
+        role,
+        location,
+        disabled: false
+      }]);
+
+      if (!error) {
+        $("newUsername").value = "";
+        $("newDisplayName").value = "";
+        $("newPassword").value = "";
+        await renderAccountList();
+      } else {
+        alert("Username already exists or could not be created.");
+      }
+    }
+
+    async function openEditUserModal(id) {
+      const { data } = await db.from("store_users").select("*").eq("id", id).single();
+      if (!data) return;
+
+      $("editUserId").value = data.id;
+      $("editUsernameDisplay").value = data.username;
+      $("editUserFullName").value = data.name;
+      $("editUserRole").value = data.role;
+      $("editUserLocation").value = data.location || "Juba Depot";
+      $("editUserPassword").value = "";
+
+      $("editUserModal").classList.remove("hidden");
+      $("editUserModal").classList.add("flex");
+    }
+
+    function closeEditUserModal() {
+      $("editUserModal").classList.add("hidden");
+      $("editUserModal").classList.remove("flex");
+    }
+
+    async function saveUserEdits(e) {
+      e.preventDefault();
+
+      const id = Number($("editUserId").value);
+      const name = $("editUserFullName").value.trim();
+      const role = $("editUserRole").value;
+      const location = $("editUserLocation").value;
+      const password = $("editUserPassword").value.trim();
+
+      const updateObj = { name, role, location };
+      if (password) updateObj.password = password; // kept only for compatibility; auth password is kept in Supabase Auth
+
+      const { error } = await db.from("store_users").update(updateObj).eq("id", id);
+
+      if (!error) {
+        closeEditUserModal();
+        await renderAccountList();
+      } else {
+        alert("Failed to update user.");
+      }
+    }
+
+    function exportCSV() {
+      const rows = currentItems.map(item => ({
+        "Item Code": item.item_code,
+        "Description": item.description,
+        "Category": item.category,
+        "Unit": item.unit,
+        "Opening": item.opening,
+        "Added": item.added,
+        "Issues": item.issues,
+        "Closing": Number(item.opening) + Number(item.added) - Number(item.issues),
+        "Cost Price": Number(item.cost).toFixed(2),
+        "Sale Price": Number(item.price).toFixed(2),
+        "Revenue": (Number(item.issues) * Number(item.price)).toFixed(2),
+        "Comments": item.comments || ""
+      }));
+
+      const worksheet = XLSX.utils.json_to_sheet(rows);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, `${activeLocation} ${dateKey()}`);
+      XLSX.writeFile(workbook, `GAS_${activeLocation}_${dateKey()}.csv`);
+    }
+
+    async function openUserManager() {
+      await loadLocations();
+      await renderLocationList();
+      await renderAccountList();
+      $("userManagerModal").classList.remove("hidden");
+      $("userManagerModal").classList.add("flex");
+    }
+
+    function closeUserManager() {
+      $("userManagerModal").classList.add("hidden");
+      $("userManagerModal").classList.remove("flex");
+    }
+
+    async function initSession() {
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData.session) return;
+
+      const { data: appUser, error } = await db
+        .from("store_users")
+        .select("*")
+        .eq("auth_user_id", sessionData.session.user.id)
+        .eq("disabled", false)
+        .maybeSingle();
+
+      if (!error && appUser) {
+        currentUser = appUser;
+        $("displayUserName").textContent = `${currentUser.name} (${currentUser.role})`;
+
+        if (currentUser.role === "Manager") {
+          activeLocation = "Juba Depot";
+          $("managerLocationBox").classList.remove("hidden");
+          $("managerLocationBox").classList.add("flex");
+          $("manageUsersBtn").classList.remove("hidden");
+          $("auditBtn").classList.remove("hidden");
+          $("newItemBtn").classList.remove("hidden");
+          $("downloadTemplateBtn").classList.remove("hidden");
+          $("uploadExcelBtn").classList.remove("hidden");
+        } else {
+          activeLocation = currentUser.location;
+          $("managerLocationBox").classList.add("hidden");
+          $("manageUsersBtn").classList.add("hidden");
+          $("auditBtn").classList.add("hidden");
+          $("newItemBtn").classList.add("hidden");
+          $("downloadTemplateBtn").classList.add("hidden");
+          $("uploadExcelBtn").classList.add("hidden");
+        }
+
+        $("locationBadge").textContent = activeLocation;
+        $("loginModal").classList.add("hidden");
+        await loadLocations();
+        await loadCloudData(activeLocation);
+      }
+    }
+
+    $("selectedDate").value = localDateString();
+    updateDayLabel();
+    bindEvents();
+    initSession();
+  </script>
 </body>
 </html>
